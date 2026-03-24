@@ -1,0 +1,140 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+h1 {
+  margin-bottom: 20px;
+  font-size: 2em;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  background: #222;
+  color: white;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #444;
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #666;
+}
+
+#qrResult img {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 300px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+}
+
+#scanResult {
+  margin-top: 15px;
+  font-size: 1.1em;
+  color: #0f0;
+  word-break: break-all;
+  padding: 10px;
+  background: rgba(0,255,0,0.1);
+  border-radius: 8px;
+}
+
+/* === Стили для сканера (оверлей) === */
+.scanner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.scanner-container {
+  position: relative;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.scanner-container h2 {
+  margin: 0 0 15px;
+  font-size: 1.4em;
+}
+
+#video {
+  width: 100%;
+  border-radius: 12px;
+  background: black;
+}
+
+.scan-frame {
+  position: absolute;
+  inset: 0;
+  border: 3px solid #0f0;
+  border-radius: 12px;
+  box-shadow: 0 0 20px #0f0 inset;
+  pointer-events: none;
+  animation: scan 2s infinite linear;
+}
+
+@keyframes scan {
+  0% { clip-path: inset(0 0 95% 0); }
+  50% { clip-path: inset(95% 0 0 0); }
+  100% { clip-path: inset(0 0 95% 0); }
+}
+
+#closeScanner {
+  margin-top: 20px;
+  padding: 12px 30px;
+  background: #c00;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+}
+
+#closeScanner:hover {
+  background: #e00;
+}
+
+#scanMessage {
+  margin-top: 15px;
+  font-size: 1.1em;
+  color: #ff0;
+}

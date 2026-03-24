@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Scanner App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Подключаем стили -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Подключаем библиотеку jsQR (для распознавания QR-кодов) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>QR Tool</h1>
+
+    <!-- Поле для ввода текста -->
+    <input type="text" id="textInput" placeholder="Введите текст или URL">
+
+    <!-- Кнопки -->
+    <div class="buttons">
+      <button id="generateBtn">Создать QR</button>
+      <button id="scanBtn">Сканировать QR</button>
+    </div>
+
+    <!-- Место, куда выводится сгенерированный QR-код -->
+    <div id="qrResult"></div>
+
+    <!-- Место, куда будет выводиться результат сканирования -->
+    <div id="scanResult"></div>
+  </div>
+
+  <!-- === Блок для сканера (пока скрыт) === -->
+  <div id="scannerOverlay" class="scanner-overlay" style="display: none;">
+    <div class="scanner-container">
+      <h2>Наведите камеру на QR-код</h2>
+      
+      <!-- Видео с камеры -->
+      <video id="video" autoplay playsinline></video>
+      
+      <!-- Рамка наведения (визуальная подсказка) -->
+      <div class="scan-frame"></div>
+      
+      <!-- Кнопка закрытия -->
+      <button id="closeScanner">Закрыть</button>
+      
+      <!-- Сообщение об ошибке или статусе -->
+      <div id="scanMessage"></div>
+    </div>
+  </div>
+
+  <!-- Подключаем наш JavaScript -->
+  <script src="js/core.js"></script>
+
+</body>
+</html>
