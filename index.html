@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament Lab v2.5</title>
+    <title>QRnament Lab v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; }
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         canvas { image-rendering: pixelated; }
         
         /* Logo Colors */
@@ -19,10 +19,11 @@
         /* Scan FX */
         .scan-line { 
             position:absolute; left:0; right:0; height:4px; 
-            background:#00ff41; box-shadow:0 0 20px #00ff41; 
+            background: #00ff41; box-shadow: 0 0 20px #00ff41; 
             top:0; z-index: 20; pointer-events: none;
+            display: none;
         }
-        @keyframes scan { 0% {top:0%} 100% {top:100%} }
+        @keyframes scanMove { 0% {top:0%} 100% {top:100%} }
         
         #video { transform: scaleX(-1); }
         
@@ -35,79 +36,115 @@
         
         /* Menu Overlay */
         .menu-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.98);
             z-index: 100; transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex; flex-direction: column; padding: 2rem;
+            overflow-y: auto;
         }
         .menu-overlay.open { transform: translateX(0); }
         
         .btn-active:active { transform: scale(0.96); }
         
-        /* Scrollbar */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: #333; }
+
+        /* Inputs */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; height: 4px;
+            background: #333; border-radius: 2px; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px;
+            background: #fff; border-radius: 50%; cursor: pointer;
+        }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-6 max-w-md mx-auto">
+<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
 
     <!-- Menu Overlay -->
     <div id="menu-overlay" class="menu-overlay">
-        <button onclick="toggleMenu()" class="self-end text-3xl text-zinc-500 hover:text-white mb-8">&times;</button>
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex gap-2 bg-zinc-800 p-1 rounded-lg">
+                <button onclick="setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
+                <button onclick="setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
+            </div>
+            <button onclick="toggleMenu()" class="text-3xl text-zinc-500 hover:text-white">&times;</button>
+        </div>
         
-        <div class="space-y-8 text-white">
+        <div class="space-y-6 text-sm">
             <div>
                 <h2 class="text-xl font-black mb-2 flex items-center gap-2">
                     <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
                 </h2>
-                <p class="text-zinc-400 text-sm">Lab v2.5 // Ritual Scan</p>
+                <p class="text-zinc-500">Lab v3.0 // Samurai Scan</p>
             </div>
 
-            <div class="border-t border-zinc-800 pt-6">
-                <h3 class="text-lg font-bold mb-2 text-zinc-300">How to Use</h3>
-                <p class="text-sm text-zinc-500 leading-relaxed">
-                    Enter text to generate an RGB ornament. The Blue channel holds the data (QR), while Red and Green channels hold 8-fold symmetric art. Scan a file to perform the Extraction Ritual.
-                </p>
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_usage">Як користуватися</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_usage_text">Створювати кольорові (спектральні) 2D-коди. Тестувати їх зчитування з екрана або зображення.</p>
             </div>
 
-            <div class="border-t border-zinc-800 pt-6">
-                <h3 class="text-lg font-bold mb-2 text-zinc-300">Technology</h3>
-                <p class="text-sm text-zinc-500 leading-relaxed">
-                    Uses <span class="text-zinc-300">qrcode-generator</span> for encoding, <span class="text-zinc-300">jsQR</span> for decoding, and <span class="text-zinc-300">Web Audio API</span> for synthesized scan sounds.
-                </p>
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_tech">Технологія</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994). Підхід автора дозволяє зменшити ефект міжканального змішування (cross-talk) при друці.</p>
             </div>
 
-            <div class="border-t border-zinc-800 pt-6">
-                <h3 class="text-lg font-bold mb-2 text-zinc-300">Author</h3>
-                <p class="text-sm text-zinc-500">Designed for experimental data visualization.</p>
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_author">Автор</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_author_text">Михайло Кашкаров — сайнс-арт художник, який працює на перетині світлочутливого живопису та спектрального дизайну.</p>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300">Links</h3>
+                <div class="flex flex-col gap-2 text-xs">
+                    <a href="https://zenodo.org/records/18895764" target="_blank" class="text-blue-400 hover:underline">Zenodo Research</a>
+                    <a href="https://medium.com/@Bakminsterfuler/sci-universal-model-905efe92e766" target="_blank" class="text-blue-400 hover:underline">Medium Article</a>
+                    <a href="https://telegra.ph/White-Paper-SCI-Encoding-02-22" target="_blank" class="text-blue-400 hover:underline">White Paper (UA)</a>
+                    <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400 mt-2">bakminsterfuler@gmail.com</a>
+                </div>
             </div>
         </div>
     </div>
 
-    <header class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-black tracking-tighter uppercase">
+    <header class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-black tracking-tighter uppercase">
             <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
         </h1>
         <button onclick="toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12h18M3 6h18M3 18h18"/>
-            </svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>
     </header>
 
     <div class="mb-4 relative">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-blue-500 outline-none h-20 text-sm text-white placeholder-zinc-600 pr-12" placeholder="Введите текст..."></textarea>
-        <button onclick="resetAll()" class="absolute right-3 top-3 text-zinc-500 hover:text-white transition-colors p-1" title="Очистить">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-blue-500 outline-none h-16 text-sm text-white placeholder-zinc-600 pr-12" placeholder="Text..."></textarea>
+        <button onclick="resetAll()" class="absolute right-3 top-3 text-zinc-500 hover:text-white transition-colors p-1" title="Reset">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
     </div>
 
+    <!-- Advanced Controls -->
+    <div class="mb-4 grid grid-cols-3 gap-2">
+        <div class="bg-zinc-900 p-2 rounded-lg">
+            <label class="text-[9px] text-zinc-500 block mb-1">DENSITY</label>
+            <input type="range" id="ctrl-density" min="0" max="100" value="45">
+        </div>
+        <div class="bg-zinc-900 p-2 rounded-lg">
+            <label class="text-[9px] text-zinc-500 block mb-1">STRUCTURE</label>
+            <input type="range" id="ctrl-structure" min="0" max="100" value="70">
+        </div>
+        <div class="bg-zinc-900 p-2 rounded-lg">
+            <label class="text-[9px] text-zinc-500 block mb-1">THICKNESS</label>
+            <input type="range" id="ctrl-thickness" min="1" max="5" value="2">
+        </div>
+    </div>
+
     <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
-        <!-- Internal Resolution 1024x1024, Display CSS controlled -->
         <canvas id="canvas" width="1024" height="1024" class="w-full h-full"></canvas>
         <video id="video" class="absolute inset-0 w-full h-full object-cover hidden" playsinline></video>
-        <div id="scan-line" class="scan-line" style="display:none;"></div>
+        <div id="scan-line" class="scan-line"></div>
         <div id="flash-layer" class="flash-overlay"></div>
     </div>
 
@@ -115,7 +152,7 @@
         <button onclick="saveImg()" class="w-full py-4 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest btn-active transition-transform">Save PNG</button>
         
         <div class="grid grid-cols-2 gap-3">
-            <button onclick="startScan()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 text-xs uppercase tracking-widest btn-active transition-transform">Cam Scan</button>
+            <button onclick="startCamScan()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 text-xs uppercase tracking-widest btn-active transition-transform">Cam Scan</button>
             <button onclick="document.getElementById('file-input').click()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 text-xs uppercase tracking-widest btn-active transition-transform">File Scan</button>
         </div>
         <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFile(event)">
@@ -124,99 +161,179 @@
     <p id="status" class="text-center text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-4">Ready</p>
 
     <script>
-        // --- STATE & CONFIG ---
+        // --- CONFIG & STATE ---
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const input = document.getElementById('main-input');
         const video = document.getElementById('video');
-        const scanLine = document.getElementById('scan-line');
         const statusEl = document.getElementById('status');
+        const scanLine = document.getElementById('scan-line');
         const flashLayer = document.getElementById('flash-layer');
         
-        let isScanning = false;
-        let streamTrack = null;
-        let audioCtx = null;
+        let state = {
+            lang: 'ua',
+            frozen: false, // Is the canvas showing a frozen scan result?
+            isScanning: false,
+            streamTrack: null,
+            audioCtx: null,
+            noiseSource: null, // For stopping scan sound
+            // Ornament params
+            density: 0.45,
+            structure: 0.7,
+            thickness: 2
+        };
 
-        // --- AUDIO ENGINE ---
-        const AudioEngine = {
-            ctx: null,
-            initialized: false,
-            
-            init() {
-                if(this.initialized) return;
-                try {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    this.initialized = true;
-                } catch(e) {}
+        // --- LOCALIZATION ---
+        const i18n = {
+            ua: {
+                menu_usage: "Як користуватися",
+                menu_usage_text: "Створювати кольорові (спектральні) 2D-коди. Тестувати їх зчитування з екрана або зображення.",
+                menu_tech: "Технологія",
+                menu_tech_text: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994). Підхід автора дозволяє зменшити ефект міжканального змішування (cross-talk) при друці.",
+                menu_author: "Автор",
+                menu_author_text: "Михайло Кашкаров — сайнс-арт художник, який працює на перетині світлочутливого живопису та спектрального дизайну."
             },
-
-            playRitualScan(duration = 1.8) {
-                this.init();
-                if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                
-                // Glissando (Descending Tone)
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                
-                osc.type = 'sine';
-                // 880Hz -> 220Hz
-                osc.frequency.setValueAtTime(880, now);
-                osc.frequency.exponentialRampToValueAtTime(220, now + duration);
-                
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
-                
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + duration);
-            },
-
-            playShutter() {
-                this.init();
-                if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                
-                // White Noise Burst
-                const bufferSize = this.ctx.sampleRate * 0.15; // 150ms
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const output = buffer.getChannelData(0);
-                
-                for (let i = 0; i < bufferSize; i++) {
-                    output[i] = Math.random() * 2 - 1;
-                }
-                
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-                
-                const filter = this.ctx.createBiquadFilter();
-                filter.type = "highpass";
-                filter.frequency.value = 1000;
-                
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.8, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(this.ctx.destination);
-                noise.start(now);
+            en: {
+                menu_usage: "How to Use",
+                menu_usage_text: "Create color (spectral) 2D codes. Test their reading from a screen or image.",
+                menu_tech: "Technology",
+                menu_tech_text: "Color 2D codes extend the classic QR code (Denso Wave, 1994). The author's approach minimizes the cross-talk effect during printing.",
+                menu_author: "Author",
+                menu_author_text: "Mykhailo Kashkarov — a science-art artist working at the intersection of light-sensitive painting and spectral design."
             }
         };
 
-        // --- MODULAR SNOWFLAKE ENGINE ---
-        
-        // 1. Generator for the primary Octant (1/8th triangle)
-        function generateBaseOctant(size) {
-            const center = Math.floor(size / 2);
-            const data = []; // Array of {x, y}
+        function setLang(lang) {
+            state.lang = lang;
+            // Update UI buttons
+            document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
+            document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
+            document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
+            document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
             
-            // Iterate the triangle: x >= 0, y >= 0, y <= x
+            // Update text content
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(i18n[lang][key]) el.textContent = i18n[lang][key];
+            });
+        }
+
+        // --- AUDIO ENGINE ---
+        const AudioEngine = {
+            init() {
+                if(!state.audioCtx) state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+
+            startScanSound() {
+                this.init();
+                if(state.noiseSource) return;
+                
+                // Create White Noise
+                const bufferSize = 2 * state.audioCtx.sampleRate;
+                const noiseBuffer = state.audioCtx.createBuffer(1, bufferSize, state.audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+                const whiteNoise = state.audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                whiteNoise.loop = true;
+
+                // Filter for "Saber" sound
+                const filter = state.audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 800;
+                filter.Q.value = 1;
+
+                // Sweep frequency
+                const now = state.audioCtx.currentTime;
+                filter.frequency.setValueAtTime(1500, now);
+                filter.frequency.exponentialRampToValueAtTime(200, now + 2.0);
+
+                const gain = state.audioCtx.createGain();
+                gain.gain.value = 0.15;
+
+                whiteNoise.connect(filter);
+                filter.connect(gain);
+                gain.connect(state.audioCtx.destination);
+                
+                whiteNoise.start();
+                state.noiseSource = whiteNoise;
+            },
+
+            stopScanSound() {
+                if(state.noiseSource) {
+                    try { state.noiseSource.stop(); } catch(e) {}
+                    state.noiseSource = null;
+                }
+            },
+
+            playSuccess() {
+                this.init();
+                this.stopScanSound();
+                const now = state.audioCtx.currentTime;
+
+                // 1. Shutter Click (Noise burst)
+                const clickBuffer = state.audioCtx.createBuffer(1, state.audioCtx.sampleRate * 0.1, state.audioCtx.sampleRate);
+                const clickOut = clickBuffer.getChannelData(0);
+                for (let i = 0; i < clickOut.length; i++) clickOut[i] = Math.random() * 2 - 1;
+                const click = state.audioCtx.createBufferSource();
+                click.buffer = clickBuffer;
+                const clickGain = state.audioCtx.createGain();
+                clickGain.gain.setValueAtTime(0.5, now);
+                clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                click.connect(clickGain);
+                clickGain.connect(state.audioCtx.destination);
+                click.start(now);
+
+                // 2. Success Chime
+                const osc = state.audioCtx.createOscillator();
+                const oscGain = state.audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now + 0.1);
+                osc.frequency.setValueAtTime(1100, now + 0.2);
+                oscGain.gain.setValueAtTime(0.2, now + 0.1);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.connect(oscGain);
+                oscGain.connect(state.audioCtx.destination);
+                osc.start(now + 0.1);
+                osc.stop(now + 0.6);
+            },
+
+            playFail() {
+                this.init();
+                this.stopScanSound();
+                const now = state.audioCtx.currentTime;
+                const osc = state.audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = 100;
+                const gain = state.audioCtx.createGain();
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(state.audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        };
+
+        // --- SYMMETRY ENGINE ---
+        
+        // 1. Modular Octant Generator
+        function generateSymmetryCell(size, params) {
+            const data = []; // Array of points
+            const center = Math.floor(size / 2);
+            
+            // Iterate triangle (0 <= y <= x <= center)
+            // Note: In canvas coords, y increases down. 
+            // We treat center as origin (0,0). 
+            // We iterate dx, dy relative to center.
+            
             for (let dx = 0; dx <= center; dx++) {
                 for (let dy = 0; dy <= dx; dy++) {
-                    // Logic: Random noise with 45% density
-                    if (Math.random() < 0.45) {
+                    
+                    // Logic with params
+                    let v = Math.random();
+                    // Apply structure vs noise logic simply for now
+                    if (v < params.density) {
                         data.push({x: dx, y: dy});
                     }
                 }
@@ -224,84 +341,95 @@
             return data;
         }
 
-        // 2. Symmetry Engine: Mirrors the base cell to full grid
-        function buildSymmetricGrid(size, octantData) {
+        // 2. Grid Builder (8-fold symmetry)
+        function buildOrnamentGrid(size, cellData) {
             const grid = Array(size).fill(0).map(() => Array(size).fill(0));
             const center = Math.floor(size / 2);
-            
-            octantData.forEach(p => {
+
+            cellData.forEach(p => {
                 const dx = p.x;
                 const dy = p.y;
+
+                // 8 symmetric points (Dihedral Group D4)
+                // Note: Canvas Y is inverted. 
+                // We map logical (dx, dy) to canvas (x, y) -> (center+dx, center-dy)
                 
-                // Apply 8-fold symmetry transformations
                 const points = [
-                    [dx, dy], [dy, dx], [-dx, dy], [-dy, dx], 
-                    [dx, -dy], [dy, -dx], [-dx, -dy], [-dy, -dx]
+                    [ dx,  dy], [ dy,  dx], [-dx,  dy], [-dy,  dx],
+                    [ dx, -dy], [ dy, -dx], [-dx, -dy], [-dy, -dx]
                 ];
 
                 points.forEach(([px, py]) => {
                     const gx = center + px;
-                    const gy = center - py; // Canvas Y is inverted
+                    const gy = center - py; // Inverted Y
                     if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
                         grid[gy][gx] = 1;
                     }
                 });
             });
-            
             return grid;
         }
 
-        // Wrapper to generate full snowflake using the modular engine
-        function generateSnowflake(size) {
-            const octant = generateBaseOctant(size);
-            return buildSymmetricGrid(size, octant);
-        }
-
-        // --- QR GENERATION (UTF-8 Safe) ---
+        // --- RENDER ENGINE ---
         function draw() {
-            const rawText = input.value;
+            const rawText = document.getElementById('main-input').value;
             if (!rawText) { 
                 ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024); 
                 statusEl.innerText = "Ready";
                 return; 
             }
+
+            state.frozen = false; // Unfreeze on draw
             
             try {
-                // UTF-8 Byte Encoding Fix
+                // UTF-8 Handling
                 const utf8Text = unescape(encodeURIComponent(rawText));
-                
                 const qr = qrcode(0, 'M');
                 qr.addData(utf8Text);
                 qr.make();
                 
                 const count = qr.getModuleCount();
-                // Scale to internal 1024px
                 const modSize = 1024 / count;
                 
-                const snowR = generateSnowflake(count);
-                const snowG = generateSnowflake(count);
+                // Generate Ornaments
+                const params = {
+                    density: state.density,
+                    structure: state.structure,
+                    thickness: state.thickness
+                };
 
+                // Use modular engine
+                const cellR = generateSymmetryCell(count, params);
+                const ornR = buildOrnamentGrid(count, cellR);
+                
+                // Different seed for Green (using separate generation)
+                const cellG = generateSymmetryCell(count, params); 
+                const ornG = buildOrnamentGrid(count, cellG);
+
+                // Draw
                 ctx.globalCompositeOperation = "source-over";
                 ctx.fillStyle = "#000";
                 ctx.fillRect(0, 0, 1024, 1024);
                 
-                // Use screen blending for additive colors
                 ctx.globalCompositeOperation = "screen";
 
                 for (let r = 0; r < count; r++) {
                     for (let c = 0; c < count; c++) {
                         const x = c * modSize, y = r * modSize;
                         
+                        // Blue (QR)
                         if (qr.isDark(r, c)) { 
-                            ctx.fillStyle = "#0000FF"; // Blue Channel
+                            ctx.fillStyle = "#0000FF"; 
                             ctx.fillRect(x, y, modSize, modSize); 
                         }
-                        if (snowR[r][c]) { 
-                            ctx.fillStyle = "#FF0000"; // Red Channel
+                        // Red (Ornament)
+                        if (ornR[r][c]) { 
+                            ctx.fillStyle = "#FF0000"; 
                             ctx.fillRect(x, y, modSize, modSize); 
                         }
-                        if (snowG[r][c]) { 
-                            ctx.fillStyle = "#00FF00"; // Green Channel
+                        // Green (Ornament)
+                        if (ornG[r][c]) { 
+                            ctx.fillStyle = "#00FF00"; 
                             ctx.fillRect(x, y, modSize, modSize); 
                         }
                     }
@@ -316,206 +444,196 @@
 
         // --- SCANNER LOGIC ---
 
-        // Blue Channel Isolation for QR Detection
         function processQRFromSource(sourceElement) {
             const offscreen = document.createElement('canvas');
-            // High res processing for better detection
-            const processSize = 1024; 
-            offscreen.width = processSize;
-            offscreen.height = processSize;
+            offscreen.width = 1024;
+            offscreen.height = 1024;
             const offCtx = offscreen.getContext('2d');
-
-            offCtx.drawImage(sourceElement, 0, 0, processSize, processSize);
+            offCtx.drawImage(sourceElement, 0, 0, 1024, 1024);
             
-            const imageData = offCtx.getImageData(0, 0, processSize, processSize);
+            const imageData = offCtx.getImageData(0, 0, 1024, 1024);
             const data = imageData.data;
 
-            // Extract Blue Channel
+            // Blue Channel Isolation
             for (let i = 0; i < data.length; i += 4) {
                 const b = data[i + 2];
-                data[i] = b;     // R
-                data[i + 1] = b; // G
-                data[i + 2] = b; // B
+                data[i] = b; data[i + 1] = b; data[i + 2] = b;
             }
 
-            const code = jsQR(data, processSize, processSize, {
-                inversionAttempts: "attemptBoth",
-            });
-
-            return code;
+            return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
         }
 
-        // --- FILE UPLOAD RITUAL ---
+        // --- RITUALS ---
+
+        function startCamScan() {
+            if(state.isScanning) return;
+            state.isScanning = true;
+            statusEl.innerText = "Accessing Camera...";
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    video.classList.remove('hidden');
+                    stream.getTracks()[0]; // Track handled in state
+                    statusEl.innerText = "Scanning...";
+                    AudioEngine.startScanSound();
+                    requestAnimationFrame(camScanTick);
+                })
+                .catch(err => {
+                    alert("Camera Error");
+                    stopScan();
+                });
+        }
+
+        function camScanTick() {
+            if (!state.isScanning) return;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const code = processQRFromSource(video);
+                if (code) {
+                    // FOUND!
+                    // 1. Capture Frame to Canvas
+                    ctx.drawImage(video, 0, 0, 1024, 1024);
+                    
+                    // 2. Stop Camera
+                    if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+                    video.classList.add('hidden');
+                    
+                    // 3. Start Ritual
+                    performRitual(code);
+                    return;
+                }
+            }
+            requestAnimationFrame(camScanTick);
+        }
+
         function handleFile(e) {
             const file = e.target.files[0];
-            if (!file) return;
-
-            statusEl.innerText = "Preparing Ritual...";
+            if(!file) return;
             
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = (evt) => {
                 const img = new Image();
                 img.onload = () => {
-                    // 1. Display Image (Center/Fit)
+                    // Display Image
                     ctx.clearRect(0,0,1024,1024);
+                    ctx.drawImage(img, 0, 0, 1024, 1024);
                     
-                    // Calculate scaling to fit 1024x1024
-                    const scale = Math.min(1024 / img.width, 1024 / img.height);
-                    const w = img.width * scale;
-                    const h = img.height * scale;
-                    const x = (1024 - w) / 2;
-                    const y = (1024 - h) / 2;
-                    
-                    ctx.drawImage(img, x, y, w, h);
-                    
-                    // 2. Start Ritual
-                    performRitual(img, x, y, w, h);
+                    // Process
+                    const code = processQRFromSource(img);
+                    performRitual(code);
                 };
-                img.src = event.target.result;
+                img.src = evt.target.result;
             };
             reader.readAsDataURL(file);
-            e.target.value = ''; // Reset input
+            e.target.value = '';
         }
 
-        function performRitual(img, dx, dy, dw, dh) {
-            const duration = 1800; // 1.8 seconds
+        function performRitual(code) {
+            state.isScanning = true; // Block interactions
             
-            // Start Audio
-            AudioEngine.playRitualScan(duration / 1000);
+            // 1. Start Sound & Animation
+            AudioEngine.startScanSound();
             
-            // Start Scanline Animation
             scanLine.style.display = 'block';
-            scanLine.style.transition = 'none';
             scanLine.style.top = '0%';
-            
+            scanLine.style.transition = 'none';
             // Force reflow
-            void scanLine.offsetWidth;
+            void scanLine.offsetHeight;
             
-            scanLine.style.transition = `top ${duration}ms linear`;
+            scanLine.style.transition = 'top 2s linear';
             scanLine.style.top = '100%';
-            
-            statusEl.innerText = "Extracting Data...";
-            
-            // Run detection in parallel
-            const code = processQRFromSource(img);
-            
-            // End Ritual
+            statusEl.innerText = "Extracting...";
+
+            // 2. Wait for animation (2s)
             setTimeout(() => {
-                // Stop Scanline
-                scanLine.style.display = 'none';
-                
-                // Flash
+                // 3. Flash & Success Sound
                 flashLayer.style.opacity = '1';
-                AudioEngine.playShutter();
+                AudioEngine.playSuccess();
                 
                 setTimeout(() => {
                     flashLayer.style.opacity = '0';
                     
-                    // Dim Image
-                    ctx.globalAlpha = 0.3;
-                    ctx.fillStyle = "#000000";
-                    ctx.fillRect(0, 0, 1024, 1024); // Darken base
-                    ctx.globalCompositeOperation = "source-over";
-                    ctx.drawImage(img, dx, dy, dw, dh); // Draw dimmed image
-                    ctx.globalAlpha = 1.0;
-                    
-                    // Result
+                    // 4. Result
                     if (code) {
                         try {
-                            input.value = decodeURIComponent(escape(code.data));
-                        } catch (e) {
-                            input.value = code.data;
+                            document.getElementById('main-input').value = decodeURIComponent(escape(code.data));
+                        } catch(e) {
+                            document.getElementById('main-input').value = code.data;
                         }
+                        
+                        // 5. Frozen State (Dimmed Image)
+                        ctx.fillStyle = "rgba(0,0,0,0.7)";
+                        ctx.fillRect(0, 0, 1024, 1024);
+                        
                         statusEl.innerText = "Decoded!";
-                        
-                        // After ritual, fade to ornament?
-                        setTimeout(() => {
-                            draw(); // Generate ornament from extracted text
-                        }, 600);
-                        
+                        state.frozen = true;
                     } else {
-                        alert("QR не найден в Синем канале.");
-                        statusEl.innerText = "Scan Failed";
+                        AudioEngine.playFail();
+                        statusEl.innerText = "No Data Found";
+                        // Reset to black screen
+                        ctx.fillStyle = "#000";
+                        ctx.fillRect(0, 0, 1024, 1024);
                     }
-                }, 100);
-                
-            }, duration);
-        }
-
-        // --- CAMERA SCAN ---
-        async function startScan() {
-            if (isScanning) return;
-            try {
-                statusEl.innerText = "Starting Camera...";
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                video.srcObject = stream;
-                video.play();
-                video.classList.remove('hidden');
-                scanLine.style.display = 'block';
-                
-                streamTrack = stream.getTracks()[0];
-                isScanning = true;
-                
-                AudioEngine.playRitualScan(2); // Loop manually handled or simple sound
-                
-                requestAnimationFrame(tick);
-            } catch (e) { 
-                alert("Камера недоступна"); 
-                statusEl.innerText = "Camera Error";
-            }
-        }
-
-        function tick() {
-            if (!isScanning) return;
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const code = processQRFromSource(video);
-                if (code) {
-                    try {
-                        input.value = decodeURIComponent(escape(code.data));
-                    } catch (e) {
-                        input.value = code.data;
-                    }
-                    stopScan();
-                    AudioEngine.playShutter();
-                    draw();
-                    statusEl.innerText = "Decoded!";
-                    return;
-                }
-            }
-            requestAnimationFrame(tick);
+                    
+                    state.isScanning = false;
+                    scanLine.style.display = 'none';
+                }, 150);
+            }, 2000);
         }
 
         function stopScan() {
-            isScanning = false;
-            if (streamTrack) {
-                streamTrack.stop();
-                streamTrack = null;
-            }
+            state.isScanning = false;
+            AudioEngine.stopScanSound();
+            if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
             video.classList.add('hidden');
             scanLine.style.display = 'none';
         }
 
         // --- UI ACTIONS ---
+
         function toggleMenu() {
             document.getElementById('menu-overlay').classList.toggle('open');
         }
 
         function resetAll() {
             stopScan();
-            input.value = "";
+            document.getElementById('main-input').value = "";
+            state.frozen = false;
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024);
             statusEl.innerText = "Ready";
         }
 
         function saveImg() {
             const link = document.createElement('a');
-            link.download = 'QRnament-v2.5.png';
+            link.download = 'qrnament-v3.png';
             link.href = canvas.toDataURL();
             link.click();
         }
 
-        // --- INIT ---
-        input.addEventListener('input', draw);
+        // --- EVENT LISTENERS ---
+        
+        document.getElementById('main-input').addEventListener('input', () => {
+            // If frozen, typing breaks the ice and generates new QR
+            if(state.frozen) {
+                state.frozen = false;
+            }
+            draw();
+        });
+
+        // Sliders
+        ['density', 'structure', 'thickness'].forEach(id => {
+            const el = document.getElementById('ctrl-' + id);
+            el.addEventListener('input', (e) => {
+                let val = parseFloat(e.target.value);
+                if(id !== 'thickness') val /= 100;
+                state[id] = val;
+                draw();
+            });
+        });
+
+        // Init
+        setLang('ua');
         draw();
 
     </script>
