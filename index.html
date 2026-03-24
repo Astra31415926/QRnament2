@@ -2,588 +2,723 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Snowflake Pattern Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QRnament Lab v2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0a0a0a;
-            --fg: #e8e8e8;
-            --muted: #5a5a5a;
-            --accent: #00ff88;
-            --accent-dim: #00cc6a;
-            --card: #151515;
-            --border: #252525;
-            --hover: #1e1e1e;
+            --bg: #030303;
+            --surface: #0a0a0a;
+            --border: #1a1a1a;
+            --text: #e0e0e0;
+            --accent-blue: #0088FF;
+            --accent-red: #FF004D;
+            --accent-green: #00FF41;
+            --glow-blue: 0 0 10px rgba(0, 136, 255, 0.6);
+            --glow-red: 0 0 10px rgba(255, 0, 77, 0.6);
+            --glow-green: 0 0 10px rgba(0, 255, 65, 0.6);
         }
-        
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
             font-family: 'Space Grotesk', sans-serif;
-            background: var(--bg);
-            color: var(--fg);
-            min-height: 100vh;
-            overflow-x: hidden;
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        
-        .bg-pattern {
-            position: fixed; inset: 0;
-            background-image: 
-                radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 1px);
-            background-size: 100% 100%, 32px 32px;
-            pointer-events: none; z-index: 0;
-        }
-        
-        .canvas-wrapper {
-            position: relative; background: #ffffff; border-radius: 4px;
-            box-shadow: 0 0 0 1px var(--border), 0 20px 60px -10px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .canvas-wrapper:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 0 1px var(--accent), 0 25px 70px -10px rgba(0, 0, 0, 0.6);
-        }
-        
-        #snowflakeCanvas { display: block; border-radius: 4px; }
-        
-        .control-panel {
-            background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-            padding: 20px; margin-bottom: 16px; transition: border-color 0.3s ease;
-        }
-        
-        .control-group { margin-bottom: 16px; }
-        .control-group:last-child { margin-bottom: 0; }
-        
-        .control-label {
-            display: block; font-size: 10px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.1em;
-            color: var(--muted); margin-bottom: 8px;
-        }
-        
-        /* Mode & Bias Chips */
-        .chip-grid {
-            display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-        }
-        
-        .chip-btn {
-            padding: 8px 4px; background: var(--bg); border: 1px solid var(--border);
-            border-radius: 4px; color: var(--muted); font-size: 9px;
-            font-weight: 600; text-transform: uppercase; cursor: pointer;
-            transition: all 0.2s ease; text-align: center;
-        }
-        
-        .chip-btn:hover { background: var(--hover); color: var(--fg); }
-        .chip-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
-        
-        /* Sliders */
-        .slider-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .slider-value { font-size: 12px; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
-        
-        input[type="range"] {
-            width: 100%; height: 4px; background: var(--bg); border-radius: 2px;
-            outline: none; -webkit-appearance: none;
-        }
-        
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 14px; height: 14px;
-            background: var(--accent); border-radius: 50%; cursor: pointer;
-            transition: transform 0.2s;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-        
-        /* Buttons */
-        .action-btn {
-            width: 100%; padding: 12px; border: none; border-radius: 6px;
-            font-family: 'Space Grotesk', sans-serif; font-size: 13px;
-            font-weight: 600; cursor: pointer; transition: all 0.2s ease;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        
-        .btn-primary { background: var(--accent); color: #000; }
-        .btn-primary:hover { background: var(--accent-dim); }
-        
-        .btn-secondary { background: var(--bg); color: var(--fg); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: var(--hover); }
-        
-        /* Stats */
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-            margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
-        }
-        .stat-item { text-align: center; padding: 8px; background: var(--bg); border-radius: 4px; }
-        .stat-value { font-size: 14px; font-weight: 700; color: var(--fg); }
-        .stat-label { font-size: 9px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
 
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.5s ease forwards; }
-        
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .main-layout { flex-direction: column; }
-            .controls-col { order: 2; width: 100%; }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #333; }
+
+        /* Canvas Container */
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            position: relative;
+            overflow: hidden;
         }
+
+        #main-canvas {
+            /* High res internal, fit to screen */
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            image-rendering: pixelated; /* Crisp pixels */
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* Tabs */
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: #444;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active-blue { color: var(--accent-blue); border-color: var(--accent-blue); text-shadow: var(--glow-blue); }
+        .tab-btn.active-red { color: var(--accent-red); border-color: var(--accent-red); text-shadow: var(--glow-red); }
+        .tab-btn.active-green { color: var(--accent-green); border-color: var(--accent-green); text-shadow: var(--glow-green); }
+
+        /* Controls Overlay */
+        .controls-panel {
+            background: rgba(5, 5, 5, 0.98);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            max-height: 45vh;
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        /* Inputs */
+        textarea {
+            width: 100%;
+            background: #0f0f0f;
+            border: 1px solid #222;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            resize: none;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        textarea:focus { border-color: var(--accent-blue); }
+
+        /* Range Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 2px;
+            background: #222;
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        
+        /* Scan FX */
+        .scan-line {
+            position: absolute;
+            left: 0; right: 0;
+            height: 4px;
+            background: var(--accent-green);
+            box-shadow: 0 0 20px var(--accent-green);
+            top: 0;
+            display: none;
+            z-index: 40;
+            opacity: 0.9;
+        }
+        .scan-active .scan-line {
+            display: block;
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* Video Layer */
+        #video-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 10;
+            filter: grayscale(1) contrast(1.2); /* Visual style for camera */
+        }
+        .scan-active #video-layer { opacity: 0.3; }
+
+        /* Buttons */
+        .btn-cyber {
+            padding: 12px;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cyber:active { transform: scale(0.96); }
+        .btn-cyber.danger { border-color: var(--accent-red); color: var(--accent-red); }
+        
+        .mode-chip {
+            padding: 6px 10px;
+            background: #111;
+            border: 1px solid #222;
+            color: #666;
+            font-size: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-chip.active { 
+            background: #222; 
+            color: #fff; 
+            border-color: #444; 
+        }
+
     </style>
 </head>
 <body>
-    <div class="bg-pattern"></div>
-    
-    <main class="relative z-10 min-h-screen p-4 md:p-8">
-        <header class="max-w-6xl mx-auto mb-8 animate-fade-in">
-            <div class="flex items-center gap-3 mb-1">
-                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" class="text-[var(--accent)]">
-                    <path d="M16 2v28M2 16h28M5.5 5.5l21 21M26.5 5.5l-21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
-                </svg>
-                <h1 class="text-xl md:text-2xl font-bold tracking-tight">Snowflake Pattern Engine</h1>
-            </div>
-            <p class="text-[var(--muted)] text-xs">Algorithmic ornamental generation with 8-fold symmetry</p>
-        </header>
+
+    <!-- Main View -->
+    <div class="canvas-container">
+        <canvas id="main-canvas" width="1024" height="1024"></canvas>
+        <video id="video-layer" playsinline></video>
+        <div class="scan-line"></div>
         
-        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 items-start main-layout">
-            <!-- Canvas -->
-            <div class="flex-1 flex justify-center animate-fade-in" style="animation-delay: 0.1s">
-                <div class="canvas-wrapper">
-                    <canvas id="snowflakeCanvas" width="512" height="512"></canvas>
+        <!-- Status Overlay -->
+        <div id="status-bar" class="absolute top-4 left-4 right-4 flex justify-between items-center z-20 pointer-events-none">
+            <span class="text-[10px] font-bold tracking-widest uppercase bg-black/80 px-2 py-1 rounded text-white/70" id="status-text">Ready</span>
+            <span class="text-[10px] font-bold mono bg-black/80 px-2 py-1 rounded text-white/70" id="grid-info">--</span>
+        </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel" id="panel">
+        <!-- Tab Navigation -->
+        <div class="flex border-b border-white/10">
+            <button class="tab-btn active-blue" onclick="switchTab('blue')">Blue (Data)</button>
+            <button class="tab-btn" onclick="switchTab('red')">Red (Art 1)</button>
+            <button class="tab-btn" onclick="switchTab('green')">Green (Art 2)</button>
+        </div>
+
+        <!-- Tab Content Container -->
+        <div class="p-4 space-y-4">
+            <!-- Blue Tab -->
+            <div id="tab-blue" class="tab-content">
+                <textarea id="input-text" rows="3" placeholder="Enter text for QR Code..."></textarea>
+            </div>
+
+            <!-- Red Tab -->
+            <div id="tab-red" class="tab-content hidden">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button class="mode-chip active" data-layer="red" data-mode="chaos">Chaos</button>
+                    <button class="mode-chip" data-layer="red" data-mode="lines">Lines</button>
+                    <button class="mode-chip" data-layer="red" data-mode="cross">Cross</button>
+                    <button class="mode-chip" data-layer="red" data-mode="crystal">Crystal</button>
+                    <button class="mode-chip" data-layer="red" data-mode="flow">Flow</button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Density</label>
+                        <input type="range" id="red-density" min="0" max="100" value="45">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Structure</label>
+                        <input type="range" id="red-structure" min="0" max="100" value="70">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Thickness</label>
+                        <input type="range" id="red-thickness" min="1" max="5" value="2">
+                    </div>
                 </div>
             </div>
-            
-            <!-- Controls -->
-            <div class="w-full lg:w-80 space-y-4 controls-col animate-fade-in" style="animation-delay: 0.2s">
-                
-                <!-- Pattern Mode -->
-                <div class="control-panel">
-                    <div class="control-group">
-                        <label class="control-label">Pattern Mode</label>
-                        <div class="chip-grid">
-                            <button class="chip-btn active" data-mode="chaos">Chaos</button>
-                            <button class="chip-btn" data-mode="lines">Lines</button>
-                            <button class="chip-btn" data-mode="crystal">Crystal</button>
-                            <button class="chip-btn" data-mode="flow">Flow</button>
-                            <button class="chip-btn" data-mode="embroidery">Embroid</button>
-                        </div>
+
+            <!-- Green Tab -->
+            <div id="tab-green" class="tab-content hidden">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button class="mode-chip active" data-layer="green" data-mode="chaos">Chaos</button>
+                    <button class="mode-chip" data-layer="green" data-mode="lines">Lines</button>
+                    <button class="mode-chip" data-layer="green" data-mode="cross">Cross</button>
+                    <button class="mode-chip" data-layer="green" data-mode="crystal">Crystal</button>
+                    <button class="mode-chip" data-layer="green" data-mode="flow">Flow</button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Density</label>
+                        <input type="range" id="green-density" min="0" max="100" value="45">
                     </div>
-                    
-                    <!-- Bias Control -->
-                    <div class="control-group mt-3">
-                        <label class="control-label">Bias (Structure Focus)</label>
-                        <div class="chip-grid">
-                            <button class="chip-btn active" data-bias="none">None</button>
-                            <button class="chip-btn" data-bias="center">Center</button>
-                            <button class="chip-btn" data-bias="axis">Axes</button>
-                            <button class="chip-btn" data-bias="diag">Diagonals</button>
-                            <button class="chip-btn" data-bias="edge">Edges</button>
-                        </div>
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Structure</label>
+                        <input type="range" id="green-structure" min="0" max="100" value="70">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Thickness</label>
+                        <input type="range" id="green-thickness" min="1" max="5" value="2">
                     </div>
                 </div>
+            </div>
 
-                <!-- Parameters -->
-                <div class="control-panel">
-                    <div class="control-group">
-                        <div class="slider-header">
-                            <label class="control-label" style="margin-bottom:0">Density</label>
-                            <span class="slider-value" id="densityVal">50%</span>
-                        </div>
-                        <input type="range" id="density" min="0" max="100" value="50">
-                    </div>
-                    
-                    <div class="control-group">
-                        <div class="slider-header">
-                            <label class="control-label" style="margin-bottom:0">Structure</label>
-                            <span class="slider-value" id="structureVal">70%</span>
-                        </div>
-                        <input type="range" id="structure" min="0" max="100" value="70">
-                    </div>
-
-                    <div class="control-group">
-                        <div class="slider-header">
-                            <label class="control-label" style="margin-bottom:0">Thickness</label>
-                            <span class="slider-value" id="thicknessVal">2px</span>
-                        </div>
-                        <input type="range" id="thickness" min="1" max="5" value="2">
-                    </div>
-                    
-                    <div class="control-group">
-                        <div class="slider-header">
-                            <label class="control-label" style="margin-bottom:0">Grid Size</label>
-                            <span class="slider-value" id="gridSizeVal">21</span>
-                        </div>
-                        <input type="range" id="gridSize" min="21" max="145" step="4" value="21">
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="control-panel">
-                    <div class="flex gap-2 mb-3">
-                        <button class="action-btn btn-primary" id="regenerateBtn" style="flex:2">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                            Generate
-                        </button>
-                        <button class="action-btn btn-secondary" id="saveBtn" style="flex:1">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                        </button>
-                    </div>
-                    
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-value mono" id="totalCells">441</div>
-                            <div class="stat-label">Total</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value mono" id="blackRatio">50%</div>
-                            <div class="stat-label">Filled</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value mono" id="octantCells">28</div>
-                            <div class="stat-label">Octant</div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-4 gap-2 pt-2 border-t border-white/10">
+                <button onclick="saveImage()" class="btn-cyber col-span-1">Save</button>
+                <button onclick="startScan()" class="btn-cyber col-span-1">Cam</button>
+                <button onclick="triggerFileScan()" class="btn-cyber col-span-1">File</button>
+                <button onclick="resetAll()" class="btn-cyber col-span-1 danger">Reset</button>
+                <input type="file" id="file-input" class="hidden" accept="image/*">
             </div>
         </div>
-    </main>
-    
+    </div>
+
     <script>
-        // === CONFIGURATION ===
-        const canvas = document.getElementById('snowflakeCanvas');
-        const ctx = canvas.getContext('2d');
-        
+        // === STATE MANAGEMENT ===
         const state = {
-            gridSize: 21,
-            density: 0.5,
-            structure: 0.7,
-            thickness: 2,
-            mode: 'chaos',
-            bias: 'none',
-            grid: []
+            text: '',
+            red: { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 },
+            green: { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 },
+            gridSize: 21
         };
+
+        // === DOM REFS ===
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d');
+        const video = document.getElementById('video-layer');
+        const statusText = document.getElementById('status-text');
+        const gridInfo = document.getElementById('grid-info');
+        const inputText = document.getElementById('input-text');
 
         // === PATTERN ENGINE ===
         const PatternEngine = {
+            chaos(x, y, p) { return Math.random() < p.density ? 1 : 0; },
             
-            // 1. CHAOS
-            chaos(x, y, params, biasMod) {
-                return Math.random() < (params.density * biasMod) ? 1 : 0;
-            },
-
-            // 2. LINES (Embroidery)
-            lines(x, y, params, biasMod) {
+            lines(x, y, p) {
                 const step = 6;
-                const thick = params.thickness;
-                const noise = Math.random() * 0.4;
-                
-                if ((x + y) % step < thick + noise) return 1;
-                return Math.random() < (params.density * 0.1 * biasMod) ? 1 : 0;
+                if ((x + y) % step < p.thickness + (Math.random()*0.4)) return 1;
+                return Math.random() < (p.density * 0.2) ? 1 : 0;
             },
-
-            // 3. CRYSTAL
-            crystal(x, y, params, biasMod) {
-                const dist = Math.sqrt(x*x + y*y);
-                const freq = 0.3 + (params.density * 0.5);
-                const thick = params.thickness * 0.25;
-                
-                if (Math.abs(Math.sin(dist * freq)) > (0.85 - thick)) return 1;
+            
+            cross(x, y, p) {
+                if (Math.abs(x) < p.thickness || Math.abs(y) < p.thickness) return 1;
+                if (Math.abs(x - y) < p.thickness) return Math.random() < 0.7 ? 1 : 0;
+                return Math.random() < (p.density * 0.2) ? 1 : 0;
+            },
+            
+            crystal(x, y, p) {
+                const d = Math.sqrt(x*x + y*y);
+                if (Math.abs(Math.sin(d * (0.4 + p.density))) > (0.8 - p.thickness*0.2)) return 1;
                 return 0;
             },
-
-            // 4. FLOW
-            flow(x, y, params, biasMod) {
-                const scale = 0.08 + (params.thickness * 0.04);
-                const noise = Math.sin(x * scale) + Math.cos(y * scale * 1.5);
-                const threshold = 0.5 - (params.density * 1.2);
-                return noise > threshold ? 1 : 0;
-            },
-
-            // 5. EMBROIDERY (New Logic)
-            // Uses small shapes placed in the octant
-            embroidery(x, y, params, biasMod) {
-                // Use a grid step to place shapes
-                const step = 4; 
-                const localX = x % step;
-                const localY = y % step;
-                
-                // Only generate if at a "grid anchor" or if we want random placement
-                // Here we use a probability to place a shape center
-                // But since we iterate pixel-by-pixel in the main loop, we need state or deterministic noise.
-                
-                // Alternative: Per-pixel procedural shapes
-                // Let's try a mix of predefined patterns based on position
-                
-                const patternId = Math.floor((x/step) + (y/step) * 1000) % 4; // Pseudo pattern selector
-                const fillChance = params.density * biasMod;
-
-                if (Math.random() > fillChance) return 0; // Apply density
-
-                // Simple shapes relative to a conceptual block
-                // Shape 0: Plus/Cross (center dot)
-                if (patternId === 0) {
-                    if (localX === Math.floor(step/2) && localY === Math.floor(step/2)) return 1;
-                }
-                // Shape 1: Diagonal Line
-                if (patternId === 1) {
-                    if (localX === localY) return 1;
-                }
-                // Shape 2: Diamond approximation
-                if (patternId === 2) {
-                     if (Math.abs(localX - step/2) + Math.abs(localY - step/2) <= params.thickness) return 1;
-                }
-                // Shape 3: Angle
-                if (patternId === 3) {
-                    if (localX === 0 || localY === 0) return 1;
-                }
-
-                return 0;
+            
+            flow(x, y, p) {
+                const v = Math.sin(x * (0.1 + p.thickness*0.05)) + Math.cos(y * (0.1 + p.thickness*0.05) * 1.5);
+                return v > (0.0 + p.density * 1.5) ? 1 : 0;
             }
         };
 
-        // === HELPER: BIAS CALCULATOR ===
-        function calculateBias(dx, dy, maxDist) {
-            if (state.bias === 'none') return 1.0;
-            
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            const normDist = maxDist > 0 ? dist / maxDist : 0;
-
-            if (state.bias === 'center') {
-                return 1.0 - (normDist * 0.8); // Higher prob in center
-            }
-            if (state.bias === 'edge') {
-                return 0.2 + (normDist * 0.8); // Higher prob at edges
-            }
-            if (state.bias === 'axis') {
-                // dx=0 or dy=0 is axis. 
-                const nearAxis = (dx < 2 || dy < 2) ? 1.5 : 1.0;
-                return nearAxis;
-            }
-            if (state.bias === 'diag') {
-                // dx=dy is diagonal
-                const nearDiag = (Math.abs(dx - dy) < 2) ? 1.5 : 1.0;
-                return nearDiag;
-            }
-            return 1.0;
-        }
-
-        // === HELPER: MIX WITH STRUCTURE ===
-        function mixWithRandom(patternValue, params) {
-            const s = params.structure;
-            const r = Math.random() < params.density ? 1 : 0;
-            
-            if (patternValue === 1) {
-                return (Math.random() < s) ? 1 : 0; // Keep pattern based on structure
-            } else {
-                return (Math.random() > s && r === 1) ? 1 : 0; // Add noise based on (1-s)
-            }
-        }
-
-        // Clean isolated pixels (dirt)
-        function cleanNoise(grid) {
-            const n = grid.length;
-            const tempGrid = grid.map(row => [...row]);
-            
-            for(let i=0; i<n; i++) {
-                for(let j=0; j<n; j++) {
-                    if (grid[i][j] === 1) {
-                        let neighbors = 0;
-                        for(let di=-1; di<=1; di++) {
-                            for(let dj=-1; dj<=1; dj++) {
-                                if(di===0 && dj===0) continue;
-                                const ni = i + di;
-                                const nj = j + dj;
-                                if (ni>=0 && ni<n && nj>=0 && nj<n && grid[ni][nj]===1) {
-                                    neighbors++;
-                                }
-                            }
-                        }
-                        if (neighbors < 1) tempGrid[i][j] = 0;
-                    }
-                }
-            }
-            return tempGrid;
-        }
-
-        // === MAIN GENERATION ===
-        
-        function generateGrid() {
-            const n = state.gridSize;
-            const center = Math.floor(n / 2);
-            const maxDist = center;
-            const params = {
-                density: state.density,
-                structure: state.structure,
-                thickness: state.thickness
-            };
-
-            state.grid = Array(n).fill(null).map(() => Array(n).fill(0));
-            const patternFn = PatternEngine[state.mode] || PatternEngine.chaos;
-
-            // Generate Octant
-            for (let i = 0; i < n; i++) {
-                for (let j = 0; j < n; j++) {
-                    const dx = i - center;
-                    const dy = center - j;
-
-                    // Octant Logic: x >= 0, y >= 0, y <= x
-                    if (dx >= 0 && dy >= 0 && dy <= dx) {
-                        
-                        // Calculate Bias Modifier
-                        const biasMod = calculateBias(dx, dy, maxDist);
-                        
-                        // Get pattern value (1 or 0)
-                        let val = patternFn(dx, dy, params, biasMod);
-                        
-                        // Mix with randomness (Structure parameter)
-                        val = mixWithRandom(val, params);
-                        
-                        // Apply bias probability boost
-                        // If bias is strong, we boost probability of 1 directly or via patternFn
-                        // Here we apply a final chance multiplier for the bias
-                        if (val === 0 && biasMod > 1.0 && Math.random() < (biasMod - 1.0) * params.density) {
-                            val = 1;
-                        }
-                        
-                        if (val === 1) {
-                            setSymmetricValue(dx, dy, 1);
-                        }
-                    }
-                }
-            }
-
-            // Post-processing
-            state.grid = cleanNoise(state.grid);
-            updateStats();
-        }
-
-        function setSymmetricValue(dx, dy, value) {
-            const n = state.gridSize;
-            const center = Math.floor(n / 2);
-            
+        // === SYMMETRY HELPER (8-Fold) ===
+        function setSymmetricValue(grid, size, center, dx, dy, val) {
+            // 8 symmetric positions (Cartesian + Diagonal mirrors)
             const positions = [
-                [dx, dy], [-dx, dy], [dx, -dy], [-dx, -dy],
-                [dy, dx], [-dy, dx], [dy, -dx], [-dy, -dx]
+                [dx, dy], [-dx, dy], [dx, -dy], [-dx, -dy], // Cartesian Mirrors
+                [dy, dx], [-dy, dx], [dy, -dx], [-dy, -dx]  // Diagonal Mirrors
             ];
             
             positions.forEach(([px, py]) => {
-                const gridX = center + px;
-                const gridY = center - py;
+                const gx = center + px;
+                const gy = center - py; // Canvas Y is inverted
                 
-                if (gridX >= 0 && gridX < n && gridY >= 0 && gridY < n) {
-                    state.grid[gridY][gridX] = value;
+                // Bounds check
+                if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
+                    grid[gy][gx] = val;
                 }
             });
         }
 
-        function render() {
-            const n = state.gridSize;
-            const canvasSize = 512;
-            const size = canvasSize / n;
+        // Generate Ornament Layer
+        function generateLayer(config, size) {
+            const grid = Array(size).fill(0).map(() => Array(size).fill(0));
+            const center = Math.floor(size / 2);
+            const params = {
+                density: config.density,
+                structure: config.structure,
+                thickness: config.thickness
+            };
             
-            canvas.width = canvasSize;
-            canvas.height = canvasSize;
-            
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, canvasSize, canvasSize);
-            
-            ctx.fillStyle = '#000000';
-            
-            for (let i = 0; i < n; i++) {
-                for (let j = 0; j < n; j++) {
-                    if (state.grid[j][i] === 1) {
-                        ctx.fillRect(i * size, j * size, size, size);
+            const fn = PatternEngine[config.mode] || PatternEngine.chaos;
+
+            // Iterate only over the first octant (x >= 0, y >= 0, y <= x)
+            // Center is (0,0) relative
+            for(let dx = 0; dx <= center; dx++) {
+                for(let dy = 0; dy <= dx; dy++) {
+                    // Calculate pattern value
+                    let val = fn(dx, dy, params);
+                    
+                    // Mix with random (Structure control)
+                    if (val === 1) {
+                        val = (Math.random() < params.structure) ? 1 : 0;
+                    } else {
+                         val = (Math.random() > params.structure && Math.random() < params.density) ? 1 : 0;
+                    }
+                    
+                    if (val === 1) {
+                        setSymmetricValue(grid, size, center, dx, dy, 1);
                     }
                 }
             }
+            return grid;
         }
 
-        function updateStats() {
-            const n = state.gridSize;
-            const total = n * n;
-            let count = 0;
-            let octant = 0;
-            const center = Math.floor(n/2);
+        // === MAIN RENDER ===
+        function render() {
+            const text = inputText.value || " ";
+            let qrSize = 21;
+            let qrGrid = [];
             
-            for(let i=0; i<n; i++) {
-                for(let j=0; j<n; j++) {
-                    if(state.grid[j][i] === 1) count++;
-                    
-                    const dx = i - center;
-                    const dy = center - j;
-                    if (dx >= 0 && dy >= 0 && dy <= dx) octant++;
+            // 1. Generate QR Grid
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(unescape(encodeURIComponent(text)));
+                qr.make();
+                qrSize = qr.getModuleCount();
+                qrGrid = Array(qrSize).fill(0).map((_, r) => 
+                    Array(qrSize).fill(0).map((_, c) => qr.isDark(r, c) ? 1 : 0)
+                );
+            } catch(e) {
+                console.error(e);
+                statusText.innerText = "QR Error";
+                return;
+            }
+            state.gridSize = qrSize;
+
+            // 2. Generate Art Layers
+            const redGrid = generateLayer(state.red, qrSize);
+            const greenGrid = generateLayer(state.green, qrSize);
+
+            // 3. Prepare Canvas (1024x1024 internal)
+            const res = 1024;
+            canvas.width = res;
+            canvas.height = res;
+            const modSize = res / qrSize;
+
+            // 4. Composite using 'screen' blending
+            // Clear with Black
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, res, res);
+            
+            ctx.globalCompositeOperation = "screen";
+
+            // Draw Blue (QR)
+            ctx.fillStyle = "#0000FF"; // Pure Blue
+            for(let r=0; r<qrSize; r++) {
+                for(let c=0; c<qrSize; c++) {
+                    if(qrGrid[r][c] === 1) {
+                        ctx.fillRect(c * modSize, r * modSize, modSize, modSize);
+                    }
                 }
             }
-            
-            document.getElementById('totalCells').textContent = total;
-            document.getElementById('blackRatio').textContent = Math.round((count/total)*100) + '%';
-            document.getElementById('octantCells').textContent = octant;
+
+            // Draw Red (Art)
+            ctx.fillStyle = "#FF0000"; // Pure Red
+            for(let r=0; r<qrSize; r++) {
+                for(let c=0; c<qrSize; c++) {
+                    if(redGrid[r][c] === 1) {
+                        ctx.fillRect(c * modSize, r * modSize, modSize, modSize);
+                    }
+                }
+            }
+
+            // Draw Green (Art)
+            ctx.fillStyle = "#00FF00"; // Pure Green
+            for(let r=0; r<qrSize; r++) {
+                for(let c=0; c<qrSize; c++) {
+                    if(greenGrid[r][c] === 1) {
+                        ctx.fillRect(c * modSize, r * modSize, modSize, modSize);
+                    }
+                }
+            }
+
+            ctx.globalCompositeOperation = "source-over";
+
+            gridInfo.innerText = `${qrSize}×${qrSize}`;
+            statusText.innerText = "Generated";
         }
 
-        // === EVENT LISTENERS ===
+        // === UI LOGIC ===
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn');
+            const activeClass = `active-${tab}`;
+            const index = tab === 'blue' ? 1 : (tab === 'red' ? 2 : 3);
+            document.querySelector(`.tab-btn:nth-child(${index})`).classList.add(activeClass);
 
-        // Mode Buttons
-        document.querySelectorAll('.chip-btn[data-mode]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.chip-btn[data-mode]').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                state.mode = e.target.dataset.mode;
-                generateGrid();
-                render();
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+        }
+
+        function bindControls(layer) {
+            ['density', 'structure', 'thickness'].forEach(param => {
+                const el = document.getElementById(`${layer}-${param}`);
+                el.addEventListener('input', (e) => {
+                    let val = parseFloat(e.target.value);
+                    if (param !== 'thickness') val /= 100;
+                    state[layer][param] = val;
+                    render();
+                });
             });
-        });
 
-        // Bias Buttons
-        document.querySelectorAll('.chip-btn[data-bias]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.chip-btn[data-bias]').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                state.bias = e.target.dataset.bias;
-                generateGrid();
-                render();
+            document.querySelectorAll(`.mode-chip[data-layer="${layer}"]`).forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll(`.mode-chip[data-layer="${layer}"]`).forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    state[layer].mode = e.target.dataset.mode;
+                    render();
+                });
             });
-        });
+        }
 
-        // Sliders
-        const sliders = ['density', 'structure', 'thickness', 'gridSize'];
-        sliders.forEach(id => {
-            const el = document.getElementById(id);
-            const valEl = document.getElementById(id + 'Val');
+        function resetAll() {
+            inputText.value = '';
+            state.red = { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 };
+            state.green = { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 };
+            // Reset UI
+            document.getElementById('red-density').value = 45;
+            document.getElementById('red-structure').value = 70;
+            document.getElementById('red-thickness').value = 2;
+            document.getElementById('green-density').value = 45;
+            document.getElementById('green-structure').value = 70;
+            document.getElementById('green-thickness').value = 2;
             
-            el.addEventListener('input', (e) => {
-                let val = parseInt(e.target.value);
-                
-                if(id === 'density' || id === 'structure') {
-                    val = val / 100;
-                    valEl.textContent = (val * 100) + '%';
-                } else if (id === 'thickness') {
-                    valEl.textContent = val + 'px';
-                } else {
-                    valEl.textContent = val;
-                }
-                
-                state[id] = val;
-                generateGrid();
-                render();
-            });
-        });
-
-        // Buttons
-        document.getElementById('regenerateBtn').addEventListener('click', () => {
-            generateGrid();
+            stopScan();
             render();
+        }
+
+        // === AUDIO ENGINE ===
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let scanOsc = null;
+        let scanGain = null;
+
+        function initAudio() {
+            if(!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        function startScanSound() {
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Create Oscillator
+            scanOsc = audioCtx.createOscillator();
+            scanGain = audioCtx.createGain();
+            
+            scanOsc.type = 'sine';
+            scanOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            
+            scanGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            
+            scanOsc.connect(scanGain);
+            scanGain.connect(audioCtx.destination);
+            
+            scanOsc.start();
+            
+            // Modulate frequency for "siren" effect
+            scanOsc.frequency.linearRampToValueAtTime(1000, audioCtx.currentTime + 1.0);
+            setTimeout(() => {
+                if(scanOsc) scanOsc.frequency.linearRampToValueAtTime(200, audioCtx.currentTime + 1.0);
+            }, 1000);
+        }
+
+        function stopScanSound() {
+            if (scanOsc) {
+                scanOsc.stop();
+                scanOsc.disconnect();
+                scanOsc = null;
+            }
+        }
+
+        function playSuccess() {
+            initAudio();
+            stopScanSound();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.setValueAtTime(1200, now + 0.1); // Crystal Ding
+            
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            
+            osc.start(now);
+            osc.stop(now + 0.5);
+        }
+
+        function playError() {
+            initAudio();
+            stopScanSound();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, now);
+            
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+
+        // === SCANNER LOGIC ===
+        let isScanning = false;
+        let videoStream = null;
+        let audioLoop = null;
+
+        function startScan() {
+            if (isScanning) return;
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(stream => {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                    document.body.classList.add('scan-active');
+                    isScanning = true;
+                    statusText.innerText = "Scanning...";
+                    
+                    // Start Audio Loop
+                    startScanSound();
+                    
+                    requestAnimationFrame(scanTick);
+                })
+                .catch(err => {
+                    alert("Camera Access Denied");
+                    stopScan();
+                });
+        }
+
+        function stopScan() {
+            isScanning = false;
+            document.body.classList.remove('scan-active');
+            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+            video.srcObject = null;
+            stopScanSound();
+        }
+
+        function scanTick() {
+            if (!isScanning) return;
+            
+            // Offscreen processing
+            const offscreen = document.createElement('canvas');
+            offscreen.width = 512; offscreen.height = 512;
+            const offCtx = offscreen.getContext('2d');
+            offCtx.drawImage(video, 0, 0, 512, 512);
+
+            const imageData = offCtx.getImageData(0, 0, 512, 512);
+            const data = imageData.data;
+            
+            // Blue Channel Isolation
+            for (let i = 0; i < data.length; i += 4) {
+                const b = data[i + 2]; // Blue
+                data[i] = b;     // R = B
+                data[i + 1] = b; // G = B
+                // data[i + 2] is already B
+            }
+
+            const code = jsQR(data, 512, 512, { inversionAttempts: "attemptBoth" });
+
+            if (code) {
+                inputText.value = decodeURIComponent(escape(code.data));
+                stopScan();
+                playSuccess();
+                render(); // Regenerate with new text
+                statusText.innerText = "Decoded!";
+            } else {
+                requestAnimationFrame(scanTick);
+            }
+        }
+
+        // File Scan
+        function triggerFileScan() {
+            document.getElementById('file-input').click();
+        }
+
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.body.classList.add('scan-active');
+            statusText.innerText = "Scanning File...";
+            startScanSound();
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    const offscreen = document.createElement('canvas');
+                    offscreen.width = 512; offscreen.height = 512;
+                    const offCtx = offscreen.getContext('2d');
+                    offCtx.drawImage(img, 0, 0, 512, 512);
+                    const imageData = offCtx.getImageData(0, 0, 512, 512);
+                    const data = imageData.data;
+
+                    // Blue Isolation
+                    for (let i = 0; i < data.length; i += 4) {
+                        const b = data[i + 2];
+                        data[i] = b; data[i + 1] = b;
+                    }
+
+                    setTimeout(() => { // Small delay for visual effect
+                        const code = jsQR(data, 512, 512, { inversionAttempts: "attemptBoth" });
+
+                        if (code) {
+                            inputText.value = decodeURIComponent(escape(code.data));
+                            playSuccess();
+                            render();
+                            statusText.innerText = "Decoded from File";
+                        } else {
+                            playError();
+                            statusText.innerText = "No QR Found";
+                            alert("QR not found in Blue Channel.");
+                        }
+                        
+                        document.body.classList.remove('scan-active');
+                        stopScanSound();
+                        e.target.value = '';
+                    }, 1000);
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
         });
 
-        document.getElementById('saveBtn').addEventListener('click', () => {
+        function saveImage() {
             const link = document.createElement('a');
-            link.download = `snowflake-${state.mode}-${state.gridSize}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.download = 'qrnament-v2.2.png';
+            link.href = canvas.toDataURL();
             link.click();
-        });
+        }
 
-        // Init
-        generateGrid();
+        // === INIT ===
+        inputText.addEventListener('input', render);
+        bindControls('red');
+        bindControls('green');
         render();
 
     </script>
