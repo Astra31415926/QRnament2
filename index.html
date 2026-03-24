@@ -1,59 +1,220 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>QR Scanner App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- Подключаем стили -->
-  <link rel="stylesheet" href="css/style.css">
-  
-  <!-- Подключаем библиотеку jsQR (для распознавания QR-кодов) -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>▣ QRnament Lab v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { background: #050505; color: #eee; font-family: 'Space Grotesk', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        canvas { image-rendering: pixelated; border-radius: 1rem; box-shadow: 0 0 40px rgba(0,255,136,0.1); }
+        
+        /* Цвета букв */
+        .c-n { color: #00FFFF; } .c-a { color: #FF00FF; } .c-m { color: #FFFF00; } 
+        .c-e { color: #FF004D; } .c-n2 { color: #00FF41; } .c-t { color: #0088FF; }
+
+        .scan-line { position:absolute; left:0; right:0; height:3px; background:#00ff88; box-shadow:0 0 15px #00ff88; top:0; display:none; animation: scan 2s linear infinite; z-index: 50; }
+        @keyframes scan { 0% {top:0} 100% {top:100%} }
+        
+        .tab-btn { padding: 8px 12px; font-size: 10px; font-weight: bold; border-radius: 8px; border: 1px solid #222; background: #111; color: #555; transition: 0.2s; }
+        .tab-btn.active-r { border-color: #FF004D; color: #FF004D; background: #200; }
+        .tab-btn.active-g { border-color: #00FF41; color: #00FF41; background: #020; }
+        .tab-btn.active-b { border-color: #0088FF; color: #0088FF; background: #002; }
+
+        input[type="range"] { accent-color: #00ff88; width: 100%; }
+    </style>
 </head>
+<body class="flex flex-col min-h-screen p-4 max-w-lg mx-auto">
 
-<body>
+    <header class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-black tracking-tighter uppercase italic">
+            QR<span class="c-n">n</span><span class="c-a">a</span><span class="c-m">m</span><span class="c-e">e</span><span class="c-n2">n</span><span class="c-t">t</span> <span class="text-[10px] not-italic text-zinc-600">LAB 2.0</span>
+        </h1>
+        <button onclick="location.reload()" class="text-zinc-700 hover:text-white transition">RESET</button>
+    </header>
 
-  <div class="container">
-    <h1>QR Tool</h1>
-
-    <!-- Поле для ввода текста -->
-    <input type="text" id="textInput" placeholder="Введите текст или URL">
-
-    <!-- Кнопки -->
-    <div class="buttons">
-      <button id="generateBtn">Создать QR</button>
-      <button id="scanBtn">Сканировать QR</button>
+    <div class="relative aspect-square w-full bg-black rounded-[2rem] border border-zinc-800 overflow-hidden mb-4 group">
+        <canvas id="mainCanvas" width="512" height="512" class="w-full h-full"></canvas>
+        <video id="video" class="absolute inset-0 w-full h-full object-cover hidden" playsinline></video>
+        <div id="scanLine" class="scan-line"></div>
     </div>
 
-    <!-- Место, куда выводится сгенерированный QR-код -->
-    <div id="qrResult"></div>
+    <div class="bg-zinc-900/50 p-4 rounded-3xl border border-zinc-800 backdrop-blur-md">
+        
+        <div class="flex gap-2 mb-4">
+            <button onclick="setTab('B')" id="tabB" class="tab-btn active-b">BLUE (DATA)</button>
+            <button onclick="setTab('R')" id="tabR" class="tab-btn">RED (ART)</button>
+            <button onclick="setTab('G')" id="tabG" class="tab-btn">GREEN (ART)</button>
+        </div>
 
-    <!-- Место, куда будет выводиться результат сканирования -->
-    <div id="scanResult"></div>
-  </div>
+        <div id="panelB">
+            <textarea id="textInput" class="w-full p-4 bg-black rounded-2xl border border-blue-900/30 outline-none h-20 text-sm mono text-blue-400 placeholder-zinc-700" placeholder="Enter message for Blue Channel..."></textarea>
+        </div>
 
-  <!-- === Блок для сканера (пока скрыт) === -->
-  <div id="scannerOverlay" class="scanner-overlay" style="display: none;">
-    <div class="scanner-container">
-      <h2>Наведите камеру на QR-код</h2>
-      
-      <!-- Видео с камеры -->
-      <video id="video" autoplay playsinline></video>
-      
-      <!-- Рамка наведения (визуальная подсказка) -->
-      <div class="scan-frame"></div>
-      
-      <!-- Кнопка закрытия -->
-      <button id="closeScanner">Закрыть</button>
-      
-      <!-- Сообщение об ошибке или статусе -->
-      <div id="scanMessage"></div>
+        <div id="panelR" class="hidden space-y-4">
+            <div class="grid grid-cols-3 gap-2" id="modesR"></div>
+            <div class="flex justify-between text-[10px] mono text-red-500"><span>DENSITY</span><span id="valR">50%</span></div>
+            <input type="range" id="densR" min="0" max="100" value="45">
+        </div>
+
+        <div id="panelG" class="hidden space-y-4">
+            <div class="grid grid-cols-3 gap-2" id="modesG"></div>
+            <div class="flex justify-between text-[10px] mono text-green-500"><span>DENSITY</span><span id="valG">50%</span></div>
+            <input type="range" id="densG" min="0" max="100" value="45">
+        </div>
     </div>
-  </div>
 
-  <!-- Подключаем наш JavaScript -->
-  <script src="js/core.js"></script>
+    <div class="grid grid-cols-3 gap-3 mt-4">
+        <button onclick="saveImg()" class="py-4 bg-white text-black font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95">Save</button>
+        <button onclick="startScan()" id="camBtn" class="py-4 bg-zinc-800 text-white font-bold rounded-2xl text-[10px] uppercase tracking-widest active:scale-95">Cam</button>
+        <button onclick="document.getElementById('fileIn').click()" class="py-4 bg-zinc-800 text-white font-bold rounded-2xl text-[10px] uppercase tracking-widest active:scale-95">File</button>
+        <input type="file" id="fileIn" accept="image/*" class="hidden" onchange="handleFile(event)">
+    </div>
 
+    <canvas id="buffer" width="512" height="512" class="hidden"></canvas>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
+        const textInput = document.getElementById('textInput'), video = document.getElementById('video');
+        const buffer = document.getElementById('buffer'), bCtx = buffer.getContext('2d');
+        
+        let state = {
+            text: "", currentTab: 'B',
+            R: { mode: 'chaos', dens: 0.45 },
+            G: { mode: 'crystal', dens: 0.45 }
+        };
+
+        const PatternEngine = {
+            chaos: (x, y, d) => Math.random() < d ? 1 : 0,
+            lines: (x, y, d) => (x + y) % 4 < (d * 4) ? 1 : 0,
+            cross: (x, y, d) => (Math.abs(x) < 2 || Math.abs(y) < 2) ? 1 : 0,
+            crystal: (x, y, d) => Math.abs(Math.sin(Math.sqrt(x*x+y*y)*0.5)) > (1-d) ? 1 : 0,
+            flow: (x, y, d) => (Math.sin(x*0.2) + Math.cos(y*0.2)) > (1.5 - d*2) ? 1 : 0
+        };
+
+        function setTab(t) {
+            state.currentTab = t;
+            ['R','G','B'].forEach(p => {
+                document.getElementById('panel'+p).classList.toggle('hidden', p !== t);
+                document.getElementById('tab'+p).className = 'tab-btn ' + (p===t ? 'active-'+p.toLowerCase() : '');
+            });
+        }
+
+        function createModeBtns(id, channel) {
+            const container = document.getElementById(id);
+            Object.keys(PatternEngine).forEach(m => {
+                const btn = document.createElement('button');
+                btn.className = 'py-2 bg-zinc-800 rounded-lg text-[9px] font-bold uppercase hover:bg-zinc-700';
+                btn.innerText = m;
+                btn.onclick = () => { state[channel].mode = m; draw(); };
+                container.appendChild(btn);
+            });
+        }
+        createModeBtns('modesR', 'R'); createModeBtns('modesG', 'G');
+
+        function generateLayer(size, mode, dens) {
+            const grid = Array(size).fill(0).map(() => Array(size).fill(0));
+            const center = Math.floor(size / 2);
+            for (let x = 0; x <= center; x++) {
+                for (let y = 0; y <= x; y++) {
+                    if (PatternEngine[mode](x, y, dens)) {
+                        const pts = [[x,y],[y,x],[-x,y],[y,-x],[-x,-y],[-y,-x],[x,-y],[-y,x]];
+                        pts.forEach(([px, py]) => {
+                            if (center+px>=0 && center+px<size && center+py>=0 && center+py<size)
+                                grid[center+py][center+px] = 1;
+                        });
+                    }
+                }
+            }
+            return grid;
+        }
+
+        function draw() {
+            if (!textInput.value) { ctx.clearRect(0,0,512,512); return; }
+            const qr = qrcode(0, 'M');
+            qr.addData(unescape(encodeURIComponent(textInput.value)));
+            qr.make();
+            const count = qr.getModuleCount(), mod = 512 / count;
+            const layR = generateLayer(count, state.R.mode, state.R.dens);
+            const layG = generateLayer(count, state.G.mode, state.G.dens);
+
+            ctx.globalCompositeOperation = "source-over";
+            ctx.fillStyle = "#000"; ctx.fillRect(0,0,512,512);
+            ctx.globalCompositeOperation = "screen";
+
+            for(let r=0; r<count; r++) {
+                for(let c=0; c<count; c++) {
+                    if (qr.isDark(r, c)) { ctx.fillStyle = "#00F"; ctx.fillRect(c*mod, r*mod, mod, mod); }
+                    if (layR[r][c]) { ctx.fillStyle = "#F00"; ctx.fillRect(c*mod, r*mod, mod, mod); }
+                    if (layG[r][c]) { ctx.fillStyle = "#0F0"; ctx.fillRect(c*mod, r*mod, mod, mod); }
+                }
+            }
+        }
+
+        // Audio Feedback
+        function beep(freq = 800, type = "sine") {
+            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ac.createOscillator(), gain = ac.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.2);
+            osc.connect(gain); gain.connect(ac.destination);
+            osc.start(); osc.stop(ac.currentTime + 0.2);
+        }
+
+        async function startScan() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = stream; video.play(); video.classList.remove('hidden');
+            document.getElementById('scanLine').style.display = 'block';
+            const tick = () => {
+                if (video.paused) return;
+                bCtx.drawImage(video, 0, 0, 512, 512);
+                const data = bCtx.getImageData(0,0,512,512);
+                for(let i=0; i<data.data.length; i+=4) data.data[i] = data.data[i+1] = data.data[i+2] = data.data[i+2];
+                const code = jsQR(data.data, 512, 512);
+                if (code) {
+                    textInput.value = decodeURIComponent(escape(code.data));
+                    beep(1200); stopScan(); draw();
+                } else requestAnimationFrame(tick);
+            };
+            tick();
+        }
+
+        function stopScan() {
+            video.srcObject.getTracks().forEach(t => t.stop());
+            video.classList.add('hidden'); document.getElementById('scanLine').style.display = 'none';
+        }
+
+        function handleFile(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    bCtx.drawImage(img, 0, 0, 512, 512);
+                    const data = bCtx.getImageData(0,0,512,512);
+                    for(let i=0; i<data.data.length; i+=4) data.data[i] = data.data[i+1] = data.data[i+2] = data.data[i+2];
+                    const code = jsQR(data.data, 512, 512);
+                    if (code) { textInput.value = decodeURIComponent(escape(code.data)); beep(1200); draw(); }
+                    else { beep(200, "square"); alert("QR not found"); }
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function saveImg() {
+            const link = document.createElement('a');
+            link.download = 'QRnament_Lab.png'; link.href = canvas.toDataURL(); link.click();
+            beep(600);
+        }
+
+        textInput.addEventListener('input', draw);
+        document.getElementById('densR').oninput = (e) => { state.R.dens = e.target.value/100; document.getElementById('valR').innerText = e.target.value+'%'; draw(); };
+        document.getElementById('densG').oninput = (e) => { state.G.dens = e.target.value/100; document.getElementById('valG').innerText = e.target.value+'%'; draw(); };
+    </script>
 </body>
 </html>
