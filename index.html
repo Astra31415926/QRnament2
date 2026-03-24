@@ -1,663 +1,239 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament Lab v2</title>
+    <title>QRnament Lab v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Space+Grotesk:wght@300;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #050505;
-            --surface: #0f0f0f;
-            --border: #1a1a1a;
-            --text: #e0e0e0;
-            --accent-blue: #0088FF;
-            --accent-red: #FF004D;
-            --accent-green: #00FF41;
-            --glow-blue: 0 0 15px rgba(0, 136, 255, 0.5);
-            --glow-red: 0 0 15px rgba(255, 0, 77, 0.5);
-            --glow-green: 0 0 15px rgba(0, 255, 65, 0.5);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root { --blue: #0088FF; --red: #FF004D; --green: #00FF41; }
+        body { background: #050505; color: #eee; font-family: 'Space Grotesk', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
         
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+        /* Экран холста */
+        .canvas-container { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; background: #000; padding: 20px; overflow: hidden; }
+        canvas { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: pixelated; border: 1px solid #222; box-shadow: 0 0 50px rgba(0,0,0,1); }
+        video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .scan-active video { opacity: 0.4; }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border); }
+        /* Полоса сканера */
+        .scan-line { position: absolute; left: 0; right: 0; height: 4px; background: var(--green); box-shadow: 0 0 20px var(--green); top: 0; display: none; z-index: 100; pointer-events: none; }
+        .scan-active .scan-line { display: block; animation: scan 2s linear infinite; }
+        @keyframes scan { from { top: 10%; } to { top: 90%; } }
 
-        /* Tabs */
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            border: none;
-            color: #555;
-            font-weight: 700;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-bottom: 2px solid transparent;
-        }
-        .tab-btn.active-blue { color: var(--accent-blue); border-color: var(--accent-blue); text-shadow: var(--glow-blue); }
-        .tab-btn.active-red { color: var(--accent-red); border-color: var(--accent-red); text-shadow: var(--glow-red); }
-        .tab-btn.active-green { color: var(--accent-green); border-color: var(--accent-green); text-shadow: var(--glow-green); }
+        /* Панель */
+        .panel { background: rgba(15,15,15,0.95); border-top: 1px solid #222; padding: 15px; z-index: 200; backdrop-filter: blur(10px); }
+        .tab-btn { flex: 1; padding: 10px; font-size: 11px; font-weight: bold; color: #444; border-bottom: 2px solid transparent; transition: 0.3s; }
+        .active-blue { color: var(--blue); border-color: var(--blue); }
+        .active-red { color: var(--red); border-color: var(--red); }
+        .active-green { color: var(--green); border-color: var(--green); }
 
-        /* Canvas */
-        #main-canvas { 
-            width: 100%; 
-            height: 100%; 
-            image-rendering: pixelated; 
-            background: #000;
-        }
-
-        /* Controls Overlay */
-        .controls-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(5, 5, 5, 0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border);
-            transform: translateY(0);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            max-height: 45vh;
-            overflow-y: auto;
-            z-index: 50;
-        }
-
-        /* Inputs */
-        textarea {
-            width: 100%;
-            background: #111;
-            border: 1px solid #222;
-            color: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            resize: none;
-            font-family: 'JetBrains Mono', monospace;
-            outline: none;
-        }
-        textarea:focus { border-color: var(--accent-blue); }
-
-        /* Range Sliders */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 4px;
-            background: #222;
-            border-radius: 2px;
-            outline: none;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            background: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-        
-        /* Scan FX */
-        .scan-line {
-            position: absolute;
-            left: 0; right: 0;
-            height: 2px;
-            background: var(--accent-green);
-            box-shadow: 0 0 15px var(--accent-green);
-            top: 0;
-            display: none;
-            z-index: 40;
-            opacity: 0.8;
-        }
-        .scan-active .scan-line {
-            display: block;
-            animation: scan 1.5s linear infinite;
-        }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-
-        /* Video Layer */
-        #video-layer {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            z-index: 10;
-        }
-        .scan-active #video-layer { opacity: 1; }
-
-        /* Buttons */
-        .btn-cyber {
-            padding: 12px;
-            background: #111;
-            border: 1px solid #333;
-            color: #fff;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-cyber:active { transform: scale(0.96); }
-        
-        .mode-chip {
-            padding: 6px 10px;
-            background: #111;
-            border: 1px solid #222;
-            color: #666;
-            font-size: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .mode-chip.active { 
-            background: #222; 
-            color: #fff; 
-            border-color: #444; 
-        }
-
+        input[type="range"] { accent-color: #555; width: 100%; height: 4px; }
+        .mode-btn { padding: 6px; background: #111; border: 1px solid #222; border-radius: 4px; font-size: 9px; color: #666; }
+        .mode-btn.active { color: #fff; border-color: #444; background: #222; }
     </style>
 </head>
 <body>
 
-    <!-- Main View -->
-    <div class="flex-1 relative overflow-hidden bg-black">
-        <canvas id="main-canvas"></canvas>
-        <video id="video-layer" playsinline></video>
+    <div class="canvas-container" id="view">
+        <canvas id="mainCanvas"></canvas>
+        <video id="videoLayer" playsinline></video>
         <div class="scan-line"></div>
-        
-        <!-- Status Overlay -->
-        <div id="status-bar" class="absolute top-4 left-4 right-4 flex justify-between items-center z-20 pointer-events-none">
-            <span class="text-[10px] font-bold tracking-widest uppercase bg-black/50 px-2 py-1 rounded text-white/70" id="status-text">Ready</span>
-            <span class="text-[10px] font-bold mono bg-black/50 px-2 py-1 rounded text-white/70" id="grid-info">--</span>
-        </div>
+        <button onclick="location.reload()" class="absolute top-4 right-4 z-[300] bg-black/50 p-2 rounded-lg text-[10px] mono border border-white/10 hover:bg-white hover:text-black transition">RESET</button>
+        <div id="status" class="absolute top-4 left-4 text-[10px] mono text-white/30 uppercase tracking-widest">System Ready</div>
     </div>
 
-    <!-- Controls Panel -->
-    <div class="controls-panel" id="panel">
-        <!-- Tab Navigation -->
-        <div class="flex border-b border-white/10">
-            <button class="tab-btn active-blue" onclick="switchTab('blue')">Blue (Data)</button>
-            <button class="tab-btn" onclick="switchTab('red')">Red (Art 1)</button>
-            <button class="tab-btn" onclick="switchTab('green')">Green (Art 2)</button>
+    <div class="panel">
+        <div class="flex mb-4 gap-2">
+            <button onclick="setTab('blue')" id="btn-blue" class="tab-btn active-blue">DATA (B)</button>
+            <button onclick="setTab('red')" id="btn-red" class="tab-btn">ART (R)</button>
+            <button onclick="setTab('green')" id="btn-green" class="tab-btn">ART (G)</button>
         </div>
 
-        <!-- Tab Content Container -->
-        <div class="p-4 space-y-4">
-            <!-- Blue Tab -->
-            <div id="tab-blue" class="tab-content">
-                <textarea id="input-text" rows="3" placeholder="Enter text for QR Code..."></textarea>
-            </div>
+        <div id="tab-blue-content">
+            <textarea id="inputText" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-sm mono text-blue-400 focus:border-blue-500 outline-none h-24" placeholder="Enter message..."></textarea>
+        </div>
 
-            <!-- Red Tab -->
-            <div id="tab-red" class="tab-content hidden">
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <button class="mode-chip active" data-layer="red" data-mode="chaos">Chaos</button>
-                    <button class="mode-chip" data-layer="red" data-mode="lines">Lines</button>
-                    <button class="mode-chip" data-layer="red" data-mode="cross">Cross</button>
-                    <button class="mode-chip" data-layer="red" data-mode="crystal">Crystal</button>
-                    <button class="mode-chip" data-layer="red" data-mode="flow">Flow</button>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Density</label>
-                        <input type="range" id="red-density" min="0" max="100" value="45">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Structure</label>
-                        <input type="range" id="red-structure" min="0" max="100" value="70">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Thickness</label>
-                        <input type="range" id="red-thickness" min="1" max="5" value="2">
-                    </div>
-                </div>
+        <div id="tab-art-content" class="hidden space-y-4">
+            <div id="mode-selector" class="grid grid-cols-5 gap-1"></div>
+            <div class="space-y-2">
+                <div class="flex justify-between text-[10px] mono text-zinc-500"><span>Density</span><span id="label-dens">45%</span></div>
+                <input type="range" id="input-dens" min="0" max="100">
+                <div class="flex justify-between text-[10px] mono text-zinc-500"><span>Structure</span><span id="label-struct">70%</span></div>
+                <input type="range" id="input-struct" min="0" max="100">
             </div>
+        </div>
 
-            <!-- Green Tab -->
-            <div id="tab-green" class="tab-content hidden">
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <button class="mode-chip active" data-layer="green" data-mode="chaos">Chaos</button>
-                    <button class="mode-chip" data-layer="green" data-mode="lines">Lines</button>
-                    <button class="mode-chip" data-layer="green" data-mode="cross">Cross</button>
-                    <button class="mode-chip" data-layer="green" data-mode="crystal">Crystal</button>
-                    <button class="mode-chip" data-layer="green" data-mode="flow">Flow</button>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Density</label>
-                        <input type="range" id="green-density" min="0" max="100" value="45">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Structure</label>
-                        <input type="range" id="green-structure" min="0" max="100" value="70">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Thickness</label>
-                        <input type="range" id="green-thickness" min="1" max="5" value="2">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
-                <button onclick="saveImage()" class="btn-cyber col-span-1">Save</button>
-                <button onclick="startScan()" class="btn-cyber col-span-1">Cam Scan</button>
-                <button onclick="triggerFileScan()" class="btn-cyber col-span-1">File Scan</button>
-                <input type="file" id="file-input" class="hidden" accept="image/*">
-            </div>
+        <div class="grid grid-cols-3 gap-2 mt-4 border-t border-zinc-800 pt-4">
+            <button onclick="save()" class="bg-white text-black font-bold py-3 rounded-xl text-[10px] uppercase">Save HD</button>
+            <button onclick="startCam()" class="bg-zinc-800 text-white font-bold py-3 rounded-xl text-[10px] uppercase">Cam</button>
+            <button onclick="document.getElementById('fileIn').click()" class="bg-zinc-800 text-white font-bold py-3 rounded-xl text-[10px] uppercase">File</button>
+            <input type="file" id="fileIn" class="hidden" accept="image/*" onchange="handleFile(event)">
         </div>
     </div>
 
     <script>
-        // === STATE MANAGEMENT ===
+        const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
+        const video = document.getElementById('videoLayer'), input = document.getElementById('inputText');
+        
+        let activeLayer = 'red'; 
         const state = {
             text: '',
-            red: { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 },
-            green: { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 },
-            gridSize: 21
+            red: { mode: 'crystal', dens: 0.45, struct: 0.7 },
+            green: { mode: 'flow', dens: 0.35, struct: 0.8 }
         };
 
-        // === DOM REFS ===
-        const canvas = document.getElementById('main-canvas');
-        const ctx = canvas.getContext('2d');
-        const video = document.getElementById('video-layer');
-        const statusText = document.getElementById('status-text');
-        const gridInfo = document.getElementById('grid-info');
-        const inputText = document.getElementById('input-text');
+        const Patterns = {
+            chaos: (x, y, d) => Math.random() < d ? 1 : 0,
+            lines: (x, y, d) => (x + y) % 6 < 2 ? 1 : 0,
+            cross: (x, y, d) => (Math.abs(x) < 1 || Math.abs(y) < 1) ? 1 : 0,
+            crystal: (x, y, d) => Math.abs(Math.sin(Math.sqrt(x*x+y*y)*0.5)) > (1-d) ? 1 : 0,
+            flow: (x, y, d) => (Math.sin(x*0.2) + Math.cos(y*0.2)) > (1.5 - d*2) ? 1 : 0
+        };
 
-        // === PATTERN ENGINE ===
-        const PatternEngine = {
-            chaos(x, y, p) { return Math.random() < p.density ? 1 : 0; },
-            
-            lines(x, y, p) {
-                const step = 6;
-                if ((x + y) % step < p.thickness + (Math.random()*0.4)) return 1;
-                return Math.random() < (p.density * 0.2) ? 1 : 0;
-            },
-            
-            cross(x, y, p) {
-                if (Math.abs(x) < p.thickness || Math.abs(y) < p.thickness) return 1;
-                if (Math.abs(x - y) < p.thickness) return Math.random() < 0.7 ? 1 : 0;
-                return Math.random() < (p.density * 0.2) ? 1 : 0;
-            },
-            
-            crystal(x, y, p) {
-                const d = Math.sqrt(x*x + y*y);
-                if (Math.abs(Math.sin(d * (0.4 + p.density))) > (0.8 - p.thickness*0.2)) return 1;
-                return 0;
-            },
-            
-            flow(x, y, p) {
-                const v = Math.sin(x * (0.1 + p.thickness*0.05)) + Math.cos(y * (0.1 + p.thickness*0.05) * 1.5);
-                return v > (0.0 + p.density * 1.5) ? 1 : 0;
+        function setTab(t) {
+            document.getElementById('tab-blue-content').classList.toggle('hidden', t !== 'blue');
+            document.getElementById('tab-art-content').classList.toggle('hidden', t === 'blue');
+            ['blue','red','green'].forEach(l => document.getElementById('btn-'+l).className = 'tab-btn' + (t===l ? ' active-'+l : ''));
+            if(t !== 'blue') {
+                activeLayer = t;
+                updateControls();
             }
-        };
+        }
 
-        // Symmetry Helper
-        function setSymmetricValue(grid, size, center, dx, dy, val) {
-            const positions = [
-                [dx, dy], [-dx, dy], [dx, -dy], [-dx, -dy],
-                [dy, dx], [-dy, dx], [dy, -dx], [-dy, -dx]
-            ];
-            
-            positions.forEach(([px, py]) => {
-                const gx = center + px;
-                const gy = center - py; // Canvas Y is inverted
-                
-                // Bounds check
-                if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
-                    grid[gy][gx] = val;
-                }
+        function updateControls() {
+            const s = state[activeLayer];
+            document.getElementById('input-dens').value = s.dens * 100;
+            document.getElementById('input-struct').value = s.struct * 100;
+            document.getElementById('label-dens').innerText = Math.round(s.dens*100)+'%';
+            document.getElementById('label-struct').innerText = Math.round(s.struct*100)+'%';
+            renderModes();
+        }
+
+        function renderModes() {
+            const container = document.getElementById('mode-selector');
+            container.innerHTML = '';
+            Object.keys(Patterns).forEach(m => {
+                const b = document.createElement('button');
+                b.className = `mode-btn ${state[activeLayer].mode === m ? 'active' : ''}`;
+                b.innerText = m.toUpperCase();
+                b.onclick = () => { state[activeLayer].mode = m; draw(); renderModes(); };
+                container.appendChild(b);
             });
         }
 
-        // Generate Ornament Layer
-        function generateLayer(config, size) {
-            const grid = Array(size).fill(0).map(() => Array(size).fill(0));
-            const center = Math.floor(size / 2);
-            const params = {
-                density: config.density,
-                structure: config.structure,
-                thickness: config.thickness
-            };
+        function draw() {
+            const txt = input.value || "QRnament";
+            const qr = qrcode(0, 'M');
+            qr.addData(unescape(encodeURIComponent(txt)));
+            qr.make();
+            const count = qr.getModuleCount();
             
-            const fn = PatternEngine[config.mode] || PatternEngine.chaos;
+            // Физический размер холста для сохранения качества
+            const exportSize = 1024;
+            canvas.width = exportSize; canvas.height = exportSize;
+            const mod = exportSize / count;
 
-            for(let i=0; i<size; i++) {
-                for(let j=0; j<size; j++) {
-                    const dx = i - center;
-                    const dy = center - j;
-
-                    // Octant check
-                    if (dx >= 0 && dy >= 0 && dy <= dx) {
-                        let val = fn(dx, dy, params);
-                        
-                        // Mix with random (Structure)
-                        if (val === 1) {
-                            val = (Math.random() < params.structure) ? 1 : 0;
-                        } else {
-                             val = (Math.random() > params.structure && Math.random() < params.density) ? 1 : 0;
-                        }
-                        
-                        if (val === 1) {
-                            setSymmetricValue(grid, size, center, dx, dy, 1);
-                        }
-                    }
-                }
-            }
-            return grid;
-        }
-
-        // === MAIN RENDER ===
-        function render() {
-            // 1. Prepare QR Data
-            const text = inputText.value || " ";
-            let qrSize = 21;
-            let qrGrid = [];
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,exportSize,exportSize);
             
-            try {
-                const qr = qrcode(0, 'M');
-                qr.addData(unescape(encodeURIComponent(text)));
-                qr.make();
-                qrSize = qr.getModuleCount();
-                qrGrid = Array(qrSize).fill(0).map((_, r) => 
-                    Array(qrSize).fill(0).map((_, c) => qr.isDark(r, c) ? 1 : 0)
-                );
-            } catch(e) {
-                console.error(e);
-                statusText.innerText = "QR Error";
-                return;
-            }
-
-            state.gridSize = qrSize;
-
-            // 2. Generate Art Layers
-            const redGrid = generateLayer(state.red, qrSize);
-            const greenGrid = generateLayer(state.green, qrSize);
-
-            // 3. Resize Canvas
-            const cw = canvas.parentElement.clientWidth;
-            const ch = canvas.parentElement.clientHeight;
-            canvas.width = qrSize;
-            canvas.height = qrSize;
-            canvas.style.width = cw + 'px';
-            canvas.style.height = ch + 'px';
-
-            // 4. Composite (Additive Blending simulation)
-            // Since canvas `globalCompositeOperation` can be tricky with pure additive on one canvas,
-            // we draw iteratively with custom logic or use 'lighter'.
+            const center = Math.floor(count / 2);
             
-            ctx.fillStyle = "#000000";
-            ctx.fillRect(0, 0, qrSize, qrSize);
+            for(let r=0; r<count; r++) {
+                for(let c=0; c<count; c++) {
+                    const dx = c - center, dy = r - center;
+                    // Symmetry logic
+                    const x = Math.abs(dx), y = Math.abs(dy);
+                    const nx = Math.max(x,y), ny = Math.min(x,y);
 
-            // Create ImageData for pixel manipulation (more precise than drawRect loops)
-            const imgData = ctx.getImageData(0, 0, qrSize, qrSize);
-            const data = imgData.data;
-
-            for(let y=0; y<qrSize; y++) {
-                for(let x=0; x<qrSize; x++) {
-                    const idx = (y * qrSize + x) * 4;
+                    ctx.globalCompositeOperation = "screen";
                     
-                    // Blue Channel (Data)
-                    if (qrGrid[y][x] === 1) {
-                        data[idx + 2] = 255; // B
+                    // Blue (QR)
+                    if(qr.isDark(r,c)) { ctx.fillStyle = '#00F'; ctx.fillRect(c*mod, r*mod, mod, mod); }
+                    
+                    // Red Art
+                    if(Patterns[state.red.mode](nx, ny, state.red.dens) && Math.random() < state.red.struct) {
+                        ctx.fillStyle = '#F00'; ctx.fillRect(c*mod, r*mod, mod, mod);
                     }
-
-                    // Red Channel (Art)
-                    if (redGrid[y][x] === 1) {
-                        data[idx] = 255; // R
+                    // Green Art
+                    if(Patterns[state.green.mode](nx, ny, state.green.dens) && Math.random() < state.green.struct) {
+                        ctx.fillStyle = '#0F0'; ctx.fillRect(c*mod, r*mod, mod, mod);
                     }
-
-                    // Green Channel (Art)
-                    if (greenGrid[y][x] === 1) {
-                        data[idx + 1] = 255; // G
-                    }
-
-                    // Overlap logic: If all are 1, it becomes White. 
-                    // If R+G, Yellow. If B+G, Cyan. If R+B, Magenta.
                 }
             }
-
-            ctx.putImageData(imgData, 0, 0);
-            gridInfo.innerText = `${qrSize}×${qrSize}`;
-            statusText.innerText = "Generated";
+            document.getElementById('status').innerText = `Grid: ${count}x${count} | HD Active`;
         }
 
-        // === UI LOGIC ===
-        
-        // Tabs
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.className = 'tab-btn'; // Reset
-            });
-            document.querySelector(`.tab-btn:nth-child(${tab === 'blue' ? 1 : (tab === 'red' ? 2 : 3)})`).classList.add(`active-${tab}`);
-
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        function beep(f, d, t="sine") {
+            const o = audio.createOscillator(), g = audio.createGain();
+            o.type = t; o.frequency.setValueAtTime(f, audio.currentTime);
+            if(f > 1000) o.frequency.exponentialRampToValueAtTime(100, audio.currentTime+d);
+            g.gain.setValueAtTime(0.1, audio.currentTime); g.gain.linearRampToValueAtTime(0, audio.currentTime+d);
+            o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+d);
         }
 
-        // Sliders & Modes Binding
-        function bindControls(layer) {
-            const prefix = layer; // 'red' or 'green'
-            
-            // Sliders
-            ['density', 'structure', 'thickness'].forEach(param => {
-                const el = document.getElementById(`${prefix}-${param}`);
-                el.addEventListener('input', (e) => {
-                    let val = parseFloat(e.target.value);
-                    if (param !== 'thickness') val /= 100;
-                    state[prefix][param] = val;
-                    render();
-                });
-            });
-
-            // Mode Chips
-            document.querySelectorAll(`.mode-chip[data-layer="${layer}"]`).forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll(`.mode-chip[data-layer="${layer}"]`).forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    state[prefix].mode = e.target.dataset.mode;
-                    render();
-                });
-            });
+        async function startCam() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = stream; video.play(); document.body.classList.add('scan-active');
+            beep(400, 0.5);
+            const tick = () => {
+                if(!video.srcObject) return;
+                const tmp = document.createElement('canvas'); tmp.width = 512; tmp.height = 512;
+                const tCtx = tmp.getContext('2d'); tCtx.drawImage(video, 0, 0, 512, 512);
+                const data = tCtx.getImageData(0,0,512,512);
+                // Isolate Blue for jsQR
+                for(let i=0; i<data.data.length; i+=4) {
+                    const b = data.data[i+2]; data.data[i]=b; data.data[i+1]=b;
+                }
+                const code = jsQR(data.data, 512, 512);
+                if(code) {
+                    input.value = code.data; beep(1200, 0.3); stopCam(); draw();
+                } else requestAnimationFrame(tick);
+            };
+            tick();
         }
 
-        // === AUDIO ENGINE ===
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const audio = new AudioCtx();
-
-        function playSound(type) {
-            if (audio.state === 'suspended') audio.resume();
-            const osc = audio.createOscillator();
-            const gain = audio.createGain();
-            osc.connect(gain);
-            gain.connect(audio.destination);
-
-            const now = audio.currentTime;
-
-            if (type === 'scan') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now);
-                osc.stop(now + 0.5);
-            } else if (type === 'success') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, now);
-                osc.frequency.setValueAtTime(1200, now + 0.1);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            } else if (type === 'fail') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(150, now);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            }
-        }
-
-        // === SCANNER LOGIC ===
-        let isScanning = false;
-        let videoStream = null;
-
-        function startScan() {
-            if (isScanning) return;
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => {
-                    videoStream = stream;
-                    video.srcObject = stream;
-                    video.play();
-                    document.body.classList.add('scan-active');
-                    isScanning = true;
-                    statusText.innerText = "Scanning...";
-                    playSound('scan');
-                    requestAnimationFrame(scanTick);
-                })
-                .catch(err => {
-                    alert("Camera Access Denied");
-                    stopScan();
-                });
-        }
-
-        function stopScan() {
-            isScanning = false;
+        function stopCam() {
+            video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null;
             document.body.classList.remove('scan-active');
-            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
-            video.srcObject = null;
         }
 
-        function scanTick() {
-            if (!isScanning) return;
-            
-            // Draw current video frame to canvas (temporarily) for processing
-            // Use offscreen for detection
-            const offscreen = document.createElement('canvas');
-            offscreen.width = 512; offscreen.height = 512;
-            const offCtx = offscreen.getContext('2d');
-            offCtx.drawImage(video, 0, 0, 512, 512);
-
-            const imageData = offCtx.getImageData(0, 0, 512, 512);
-            
-            // Isolate Blue Channel for jsQR
-            // The QR is in Blue. If Blue is bright (on black), it's white data for QR.
-            // jsQR expects grayscale. Let's extract B channel.
-            const data = imageData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                const b = data[i + 2]; // Blue channel
-                data[i] = b;     // R
-                data[i + 1] = b; // G
-                data[i + 2] = b; // B
-            }
-
-            const code = jsQR(data, 512, 512, { inversionAttempts: "attemptBoth" });
-
-            if (code) {
-                inputText.value = decodeURIComponent(escape(code.data));
-                stopScan();
-                playSound('success');
-                render();
-                statusText.innerText = "Decoded!";
-            } else {
-                requestAnimationFrame(scanTick);
-            }
-        }
-
-        // File Scan
-        function triggerFileScan() {
-            document.getElementById('file-input').click();
-        }
-
-        document.getElementById('file-input').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
+        function handleFile(e) {
             const reader = new FileReader();
-            reader.onload = (evt) => {
+            reader.onload = (ev) => {
                 const img = new Image();
                 img.onload = () => {
-                    statusText.innerText = "Processing...";
-                    
-                    // Process
-                    const offscreen = document.createElement('canvas');
-                    offscreen.width = 512; offscreen.height = 512;
-                    const offCtx = offscreen.getContext('2d');
-                    offCtx.drawImage(img, 0, 0, 512, 512);
-                    const imageData = offCtx.getImageData(0, 0, 512, 512);
-
-                    // Isolate Blue
-                    const data = imageData.data;
-                    for (let i = 0; i < data.length; i += 4) {
-                        const b = data[i + 2];
-                        data[i] = b; data[i + 1] = b; data[i + 2] = b;
-                    }
-
-                    const code = jsQR(data, 512, 512, { inversionAttempts: "attemptBoth" });
-
-                    if (code) {
-                        inputText.value = decodeURIComponent(escape(code.data));
-                        playSound('success');
-                        render();
-                        statusText.innerText = "Decoded from File";
-                    } else {
-                        playSound('fail');
-                        statusText.innerText = "No QR Found";
-                        alert("QR Code not found in the Blue Channel. Try a clearer image.");
-                    }
-                    
-                    // Reset input
-                    e.target.value = '';
+                    const tmp = document.createElement('canvas'); tmp.width = 600; tmp.height = 600;
+                    const tCtx = tmp.getContext('2d'); tCtx.drawImage(img, 0, 0, 600, 600);
+                    const data = tCtx.getImageData(0,0,600,600);
+                    for(let i=0; i<data.data.length; i+=4) { const b = data.data[i+2]; data.data[i]=b; data.data[i+1]=b; }
+                    const code = jsQR(data.data, 600, 600);
+                    if(code) { input.value = code.data; beep(1200, 0.3); draw(); }
+                    else { beep(150, 0.5, "square"); alert("QR не найден в синем канале!"); }
                 };
-                img.src = evt.target.result;
+                img.src = ev.target.result;
             };
-            reader.readAsDataURL(file);
-        });
-
-        function saveImage() {
-            const link = document.createElement('a');
-            link.download = 'qrnament-lab.png';
-            // Use the high-res internal size for save, or just the canvas as is
-            // To keep high quality, we might re-render to a temp canvas at higher res, 
-            // but keeping it pixel-perfect is fine for this use case.
-            link.href = canvas.toDataURL();
-            link.click();
+            reader.readAsDataURL(e.target.files[0]);
         }
 
-        // === INIT ===
-        inputText.addEventListener('input', render);
-        bindControls('red');
-        bindControls('green');
-        
-        // Initial Render
-        render();
+        function save() {
+            const link = document.createElement('a'); link.download = 'QRnament_HD.png';
+            link.href = canvas.toDataURL('image/png', 1.0); link.click();
+            beep(800, 0.2);
+        }
 
+        input.oninput = draw;
+        document.getElementById('input-dens').oninput = (e) => { 
+            state[activeLayer].dens = e.target.value/100; updateControls(); draw(); 
+        };
+        document.getElementById('input-struct').oninput = (e) => { 
+            state[activeLayer].struct = e.target.value/100; updateControls(); draw(); 
+        };
+
+        renderModes(); draw();
     </script>
 </body>
 </html>
