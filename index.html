@@ -1,726 +1,381 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament Lab v2.2</title>
+    <title>▣ QRnament</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #030303;
-            --surface: #0a0a0a;
-            --border: #1a1a1a;
-            --text: #e0e0e0;
-            --accent-blue: #0088FF;
-            --accent-red: #FF004D;
-            --accent-green: #00FF41;
-            --glow-blue: 0 0 10px rgba(0, 136, 255, 0.6);
-            --glow-red: 0 0 10px rgba(255, 0, 77, 0.6);
-            --glow-green: 0 0 10px rgba(0, 255, 65, 0.6);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #333; }
-
-        /* Canvas Container */
-        .canvas-container {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            position: relative;
-            overflow: hidden;
-        }
-
-        #main-canvas {
-            /* High res internal, fit to screen */
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            image-rendering: pixelated; /* Crisp pixels */
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-        }
-
-        /* Tabs */
-        .tab-btn {
-            flex: 1;
-            padding: 12px;
-            background: transparent;
-            border: none;
-            color: #444;
-            font-weight: 700;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-bottom: 2px solid transparent;
-        }
-        .tab-btn.active-blue { color: var(--accent-blue); border-color: var(--accent-blue); text-shadow: var(--glow-blue); }
-        .tab-btn.active-red { color: var(--accent-red); border-color: var(--accent-red); text-shadow: var(--glow-red); }
-        .tab-btn.active-green { color: var(--accent-green); border-color: var(--accent-green); text-shadow: var(--glow-green); }
-
-        /* Controls Overlay */
-        .controls-panel {
-            background: rgba(5, 5, 5, 0.98);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border);
-            max-height: 45vh;
-            overflow-y: auto;
-            z-index: 50;
-        }
-
-        /* Inputs */
-        textarea {
-            width: 100%;
-            background: #0f0f0f;
-            border: 1px solid #222;
-            color: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            resize: none;
-            font-family: 'JetBrains Mono', monospace;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        textarea:focus { border-color: var(--accent-blue); }
-
-        /* Range Sliders */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 2px;
-            background: #222;
-            border-radius: 2px;
-            outline: none;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            background: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-        
-        /* Scan FX */
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; }
+        canvas { image-rendering: pixelated; }
+       
+        /* Раскраска букв */
+        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; }
+        .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
+       
         .scan-line {
-            position: absolute;
-            left: 0; right: 0;
-            height: 4px;
-            background: var(--accent-green);
-            box-shadow: 0 0 20px var(--accent-green);
-            top: 0;
-            display: none;
-            z-index: 40;
-            opacity: 0.9;
-        }
-        .scan-active .scan-line {
-            display: block;
+            position:absolute; left:0; right:0; height:2px;
+            background:#00ff41; box-shadow:0 0 10px #00ff41;
+            top:0; display:none; z-index: 20;
             animation: scan 2s linear infinite;
         }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes scan { 0% {top:0} 100% {top:100%} }
 
-        /* Video Layer */
-        #video-layer {
+        /* Ritual Scan */
+        #ritual-overlay {
             position: absolute;
             inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
             pointer-events: none;
-            transition: opacity 0.3s;
-            z-index: 10;
-            filter: grayscale(1) contrast(1.2); /* Visual style for camera */
         }
-        .scan-active #video-layer { opacity: 0.3; }
+        .ritual-canvas {
+            position: absolute;
+            inset: 0;
+            image-rendering: pixelated;
+        }
+        .scan-ritual-line {
+            position: absolute;
+            left: 0; right: 0; height: 3px;
+            background: linear-gradient(transparent, #fff, transparent);
+            box-shadow: 0 0 30px #fff;
+            filter: blur(1px);
+            animation: ritualScan 1.8s linear forwards;
+        }
+        @keyframes ritualScan { 0% { top: -10px; } 100% { top: 100%; } }
 
-        /* Buttons */
-        .btn-cyber {
-            padding: 12px;
-            background: #111;
-            border: 1px solid #333;
-            color: #fff;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-cyber:active { transform: scale(0.96); }
-        .btn-cyber.danger { border-color: var(--accent-red); color: var(--accent-red); }
-        
-        .mode-chip {
-            padding: 6px 10px;
-            background: #111;
-            border: 1px solid #222;
-            color: #666;
-            font-size: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .mode-chip.active { 
-            background: #222; 
-            color: #fff; 
-            border-color: #444; 
-        }
-
+        #video { transform: scaleX(-1); }
+        .btn-active:active { transform: scale(0.96); }
     </style>
 </head>
-<body>
+<body class="flex flex-col min-h-screen p-6 max-w-md mx-auto">
+    <header class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-black tracking-tighter uppercase">
+            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+        </h1>
+    </header>
 
-    <!-- Main View -->
-    <div class="canvas-container">
-        <canvas id="main-canvas" width="1024" height="1024"></canvas>
-        <video id="video-layer" playsinline></video>
-        <div class="scan-line"></div>
-        
-        <!-- Status Overlay -->
-        <div id="status-bar" class="absolute top-4 left-4 right-4 flex justify-between items-center z-20 pointer-events-none">
-            <span class="text-[10px] font-bold tracking-widest uppercase bg-black/80 px-2 py-1 rounded text-white/70" id="status-text">Ready</span>
-            <span class="text-[10px] font-bold mono bg-black/80 px-2 py-1 rounded text-white/70" id="grid-info">--</span>
-        </div>
+    <div class="mb-4 relative">
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-blue-500 outline-none h-20 text-sm text-white placeholder-zinc-600 pr-12" placeholder="Введите текст..."></textarea>
+        <button onclick="resetAll()" class="absolute right-3 top-3 text-zinc-500 hover:text-white transition-colors p-1" title="Очистить">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
     </div>
 
-    <!-- Controls Panel -->
-    <div class="controls-panel" id="panel">
-        <!-- Tab Navigation -->
-        <div class="flex border-b border-white/10">
-            <button class="tab-btn active-blue" onclick="switchTab('blue')">Blue (Data)</button>
-            <button class="tab-btn" onclick="switchTab('red')">Red (Art 1)</button>
-            <button class="tab-btn" onclick="switchTab('green')">Green (Art 2)</button>
-        </div>
-
-        <!-- Tab Content Container -->
-        <div class="p-4 space-y-4">
-            <!-- Blue Tab -->
-            <div id="tab-blue" class="tab-content">
-                <textarea id="input-text" rows="3" placeholder="Enter text for QR Code..."></textarea>
-            </div>
-
-            <!-- Red Tab -->
-            <div id="tab-red" class="tab-content hidden">
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <button class="mode-chip active" data-layer="red" data-mode="chaos">Chaos</button>
-                    <button class="mode-chip" data-layer="red" data-mode="lines">Lines</button>
-                    <button class="mode-chip" data-layer="red" data-mode="cross">Cross</button>
-                    <button class="mode-chip" data-layer="red" data-mode="crystal">Crystal</button>
-                    <button class="mode-chip" data-layer="red" data-mode="flow">Flow</button>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Density</label>
-                        <input type="range" id="red-density" min="0" max="100" value="45">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Structure</label>
-                        <input type="range" id="red-structure" min="0" max="100" value="70">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Thickness</label>
-                        <input type="range" id="red-thickness" min="1" max="5" value="2">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Green Tab -->
-            <div id="tab-green" class="tab-content hidden">
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <button class="mode-chip active" data-layer="green" data-mode="chaos">Chaos</button>
-                    <button class="mode-chip" data-layer="green" data-mode="lines">Lines</button>
-                    <button class="mode-chip" data-layer="green" data-mode="cross">Cross</button>
-                    <button class="mode-chip" data-layer="green" data-mode="crystal">Crystal</button>
-                    <button class="mode-chip" data-layer="green" data-mode="flow">Flow</button>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Density</label>
-                        <input type="range" id="green-density" min="0" max="100" value="45">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Structure</label>
-                        <input type="range" id="green-structure" min="0" max="100" value="70">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Thickness</label>
-                        <input type="range" id="green-thickness" min="1" max="5" value="2">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-4 gap-2 pt-2 border-t border-white/10">
-                <button onclick="saveImage()" class="btn-cyber col-span-1">Save</button>
-                <button onclick="startScan()" class="btn-cyber col-span-1">Cam</button>
-                <button onclick="triggerFileScan()" class="btn-cyber col-span-1">File</button>
-                <button onclick="resetAll()" class="btn-cyber col-span-1 danger">Reset</button>
-                <input type="file" id="file-input" class="hidden" accept="image/*">
-            </div>
-        </div>
+    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
+        <canvas id="canvas" width="512" height="512" class="w-full h-full"></canvas>
+        <video id="video" class="absolute inset-0 w-full h-full object-cover hidden" playsinline></video>
+        <div id="scan-line" class="scan-line"></div>
+        <div id="ritual-overlay"></div>
     </div>
+
+    <div class="flex flex-col gap-3">
+        <button onclick="saveImg()" class="w-full py-4 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest btn-active transition-transform">Save PNG</button>
+       
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="startScan()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 text-xs uppercase tracking-widest btn-active transition-transform">Cam Scan</button>
+            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 text-xs uppercase tracking-widest btn-active transition-transform">File Scan</button>
+        </div>
+        <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFile(event)">
+    </div>
+
+    <p id="status" class="text-center text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-4">Ready</p>
 
     <script>
-        // === STATE MANAGEMENT ===
-        const state = {
-            text: '',
-            red: { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 },
-            green: { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 },
-            gridSize: 21
-        };
-
-        // === DOM REFS ===
-        const canvas = document.getElementById('main-canvas');
+        const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const video = document.getElementById('video-layer');
-        const statusText = document.getElementById('status-text');
-        const gridInfo = document.getElementById('grid-info');
-        const inputText = document.getElementById('input-text');
+        const input = document.getElementById('main-input');
+        const video = document.getElementById('video');
+        const scanLine = document.getElementById('scan-line');
+        const statusEl = document.getElementById('status');
+       
+        let isScanning = false;
+        let streamTrack = null;
+        let audioCtx = null;
 
-        // === PATTERN ENGINE ===
-        const PatternEngine = {
-            chaos(x, y, p) { return Math.random() < p.density ? 1 : 0; },
-            
-            lines(x, y, p) {
-                const step = 6;
-                if ((x + y) % step < p.thickness + (Math.random()*0.4)) return 1;
-                return Math.random() < (p.density * 0.2) ? 1 : 0;
-            },
-            
-            cross(x, y, p) {
-                if (Math.abs(x) < p.thickness || Math.abs(y) < p.thickness) return 1;
-                if (Math.abs(x - y) < p.thickness) return Math.random() < 0.7 ? 1 : 0;
-                return Math.random() < (p.density * 0.2) ? 1 : 0;
-            },
-            
-            crystal(x, y, p) {
-                const d = Math.sqrt(x*x + y*y);
-                if (Math.abs(Math.sin(d * (0.4 + p.density))) > (0.8 - p.thickness*0.2)) return 1;
-                return 0;
-            },
-            
-            flow(x, y, p) {
-                const v = Math.sin(x * (0.1 + p.thickness*0.05)) + Math.cos(y * (0.1 + p.thickness*0.05) * 1.5);
-                return v > (0.0 + p.density * 1.5) ? 1 : 0;
-            }
-        };
-
-        // === SYMMETRY HELPER (8-Fold) ===
-        function setSymmetricValue(grid, size, center, dx, dy, val) {
-            // 8 symmetric positions (Cartesian + Diagonal mirrors)
-            const positions = [
-                [dx, dy], [-dx, dy], [dx, -dy], [-dx, -dy], // Cartesian Mirrors
-                [dy, dx], [-dy, dx], [dy, -dx], [-dy, -dx]  // Diagonal Mirrors
-            ];
-            
-            positions.forEach(([px, py]) => {
-                const gx = center + px;
-                const gy = center - py; // Canvas Y is inverted
-                
-                // Bounds check
-                if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
-                    grid[gy][gx] = val;
-                }
-            });
+        function getAudioContext() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
         }
 
-        // Generate Ornament Layer
-        function generateLayer(config, size) {
+        // --- ГЕНЕРАТОР СНЕЖИНКИ ---
+        function generateSnowflake(size) {
             const grid = Array(size).fill(0).map(() => Array(size).fill(0));
             const center = Math.floor(size / 2);
-            const params = {
-                density: config.density,
-                structure: config.structure,
-                thickness: config.thickness
-            };
-            
-            const fn = PatternEngine[config.mode] || PatternEngine.chaos;
-
-            // Iterate only over the first octant (x >= 0, y >= 0, y <= x)
-            // Center is (0,0) relative
-            for(let dx = 0; dx <= center; dx++) {
-                for(let dy = 0; dy <= dx; dy++) {
-                    // Calculate pattern value
-                    let val = fn(dx, dy, params);
-                    
-                    // Mix with random (Structure control)
-                    if (val === 1) {
-                        val = (Math.random() < params.structure) ? 1 : 0;
-                    } else {
-                         val = (Math.random() > params.structure && Math.random() < params.density) ? 1 : 0;
-                    }
-                    
-                    if (val === 1) {
-                        setSymmetricValue(grid, size, center, dx, dy, 1);
+            for (let x = 0; x <= center; x++) {
+                for (let y = 0; y <= x; y++) {
+                    if (Math.random() < 0.45) {
+                        const points = [[x,y],[y,x],[-x,y],[y,-x],[-x,-y],[-y,-x],[x,-y],[-y,x]];
+                        points.forEach(([px, py]) => {
+                            const gx = center + px, gy = center + py;
+                            if (gx >= 0 && gx < size && gy >= 0 && gy < size) grid[gy][gx] = 1;
+                        });
                     }
                 }
             }
             return grid;
         }
 
-        // === MAIN RENDER ===
-        function render() {
-            const text = inputText.value || " ";
-            let qrSize = 21;
-            let qrGrid = [];
-            
-            // 1. Generate QR Grid
-            try {
-                const qr = qrcode(0, 'M');
-                qr.addData(unescape(encodeURIComponent(text)));
-                qr.make();
-                qrSize = qr.getModuleCount();
-                qrGrid = Array(qrSize).fill(0).map((_, r) => 
-                    Array(qrSize).fill(0).map((_, c) => qr.isDark(r, c) ? 1 : 0)
-                );
-            } catch(e) {
-                console.error(e);
-                statusText.innerText = "QR Error";
+        // --- ОТРИСОВКА QR ОРНАМЕНТА ---
+        function draw() {
+            const rawText = input.value.trim();
+            if (!rawText) {
+                ctx.fillStyle = "#000"; 
+                ctx.fillRect(0,0,512,512);
+                statusEl.innerText = "Ready";
                 return;
             }
-            state.gridSize = qrSize;
+           
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(rawText);   // передаём строку напрямую — лучше для UTF-8
+                qr.make();
+               
+                const count = qr.getModuleCount();
+                const modSize = 512 / count;
+                const snowR = generateSnowflake(count);
+                const snowG = generateSnowflake(count);
 
-            // 2. Generate Art Layers
-            const redGrid = generateLayer(state.red, qrSize);
-            const greenGrid = generateLayer(state.green, qrSize);
+                ctx.globalCompositeOperation = "source-over";
+                ctx.fillStyle = "#000";
+                ctx.fillRect(0, 0, 512, 512);
+                ctx.globalCompositeOperation = "screen";
 
-            // 3. Prepare Canvas (1024x1024 internal)
-            const res = 1024;
-            canvas.width = res;
-            canvas.height = res;
-            const modSize = res / qrSize;
-
-            // 4. Composite using 'screen' blending
-            // Clear with Black
-            ctx.fillStyle = "#000000";
-            ctx.fillRect(0, 0, res, res);
-            
-            ctx.globalCompositeOperation = "screen";
-
-            // Draw Blue (QR)
-            ctx.fillStyle = "#0000FF"; // Pure Blue
-            for(let r=0; r<qrSize; r++) {
-                for(let c=0; c<qrSize; c++) {
-                    if(qrGrid[r][c] === 1) {
-                        ctx.fillRect(c * modSize, r * modSize, modSize, modSize);
+                for (let r = 0; r < count; r++) {
+                    for (let c = 0; c < count; c++) {
+                        const x = c * modSize, y = r * modSize;
+                        if (qr.isDark(r, c)) { 
+                            ctx.fillStyle = "#0000FF"; 
+                            ctx.fillRect(x, y, modSize, modSize); 
+                        }
+                        if (snowR[r][c]) { 
+                            ctx.fillStyle = "#FF0000"; 
+                            ctx.fillRect(x, y, modSize, modSize); 
+                        }
+                        if (snowG[r][c]) { 
+                            ctx.fillStyle = "#00FF00"; 
+                            ctx.fillRect(x, y, modSize, modSize); 
+                        }
                     }
                 }
+                ctx.globalCompositeOperation = "source-over";
+                statusEl.innerText = "Grid: " + count + "×" + count;
+            } catch (e) {
+                console.error(e);
+                statusEl.innerText = "Error generating";
+            }
+        }
+
+        // --- ОБРАБОТКА QR ИЗ ИЗОБРАЖЕНИЯ/ВИДЕО (синий канал) ---
+        function processQRFromSource(sourceElement) {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = 512;
+            offscreen.height = 512;
+            const offCtx = offscreen.getContext('2d');
+            offCtx.drawImage(sourceElement, 0, 0, 512, 512);
+
+            const imageData = offCtx.getImageData(0, 0, 512, 512);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const b = data[i + 2];
+                data[i] = b;
+                data[i + 1] = b;
+                data[i + 2] = b;
             }
 
-            // Draw Red (Art)
-            ctx.fillStyle = "#FF0000"; // Pure Red
-            for(let r=0; r<qrSize; r++) {
-                for(let c=0; c<qrSize; c++) {
-                    if(redGrid[r][c] === 1) {
-                        ctx.fillRect(c * modSize, r * modSize, modSize, modSize);
-                    }
+            return jsQR(data, 512, 512, { inversionAttempts: "attemptBoth" });
+        }
+
+        // --- РИТУАЛ СКАНИРОВАНИЯ ПРИ ЗАГРУЗКЕ ФАЙЛА ---
+        async function performRitualScan(originalImg) {
+            const duration = 1800;
+
+            let overlay = document.getElementById('ritual-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'ritual-overlay';
+                overlay.innerHTML = `<canvas id="ritual-canvas" class="ritual-canvas" width="512" height="512"></canvas>`;
+                document.querySelector('.relative.aspect-square').appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+
+            const ritualCanvas = document.getElementById('ritual-canvas');
+            const rCtx = ritualCanvas.getContext('2d');
+            rCtx.drawImage(canvas, 0, 0);
+
+            const line = document.createElement('div');
+            line.className = 'scan-ritual-line';
+            overlay.appendChild(line);
+
+            // Звук — descending glissando
+            const ctxAudio = getAudioContext();
+            const osc = ctxAudio.createOscillator();
+            const gain = ctxAudio.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(880, ctxAudio.currentTime);
+            osc.frequency.linearRampToValueAtTime(220, ctxAudio.currentTime + duration/1000);
+            gain.gain.value = 0.15;
+            osc.connect(gain).connect(ctxAudio.destination);
+            osc.start();
+
+            await new Promise(resolve => setTimeout(resolve, duration));
+
+            // Flash + shutter click
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.fillRect(0, 0, 512, 512);
+            setTimeout(() => draw(), 80);
+
+            const clickOsc = ctxAudio.createOscillator();
+            clickOsc.type = 'square';
+            clickOsc.frequency.value = 1200;
+            const clickGain = ctxAudio.createGain();
+            clickGain.gain.value = 0.25;
+            clickOsc.connect(clickGain).connect(ctxAudio.destination);
+            clickOsc.start();
+            setTimeout(() => clickOsc.stop(), 50);
+
+            osc.stop();
+
+            // Реальное декодирование
+            const code = processQRFromSource(originalImg);
+
+            if (code) {
+                try {
+                    input.value = decodeURIComponent(escape(code.data));
+                } catch (e) {
+                    input.value = code.data;
                 }
+                statusEl.innerText = "Extraction Complete ✓";
+
+                // Затемняем загруженное изображение
+                const scale = Math.min(512 / originalImg.width, 512 / originalImg.height);
+                const w = originalImg.width * scale;
+                const h = originalImg.height * scale;
+                const x = (512 - w) / 2;
+                const y = (512 - h) / 2;
+
+                ctx.globalAlpha = 0.28;
+                ctx.drawImage(originalImg, x, y, w, h);
+                ctx.globalAlpha = 1.0;
+
+                draw(); // накладываем орнамент
+            } else {
+                statusEl.innerText = "Extraction Failed";
+                alert("QR-код не найден. Попробуйте изображение с чётким синим каналом.");
             }
 
-            // Draw Green (Art)
-            ctx.fillStyle = "#00FF00"; // Pure Green
-            for(let r=0; r<qrSize; r++) {
-                for(let c=0; c<qrSize; c++) {
-                    if(greenGrid[r][c] === 1) {
-                        ctx.fillRect(c * modSize, r * modSize, modSize, modSize);
-                    }
-                }
-            }
-
-            ctx.globalCompositeOperation = "source-over";
-
-            gridInfo.innerText = `${qrSize}×${qrSize}`;
-            statusText.innerText = "Generated";
-        }
-
-        // === UI LOGIC ===
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn');
-            const activeClass = `active-${tab}`;
-            const index = tab === 'blue' ? 1 : (tab === 'red' ? 2 : 3);
-            document.querySelector(`.tab-btn:nth-child(${index})`).classList.add(activeClass);
-
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById(`tab-${tab}`).classList.remove('hidden');
-        }
-
-        function bindControls(layer) {
-            ['density', 'structure', 'thickness'].forEach(param => {
-                const el = document.getElementById(`${layer}-${param}`);
-                el.addEventListener('input', (e) => {
-                    let val = parseFloat(e.target.value);
-                    if (param !== 'thickness') val /= 100;
-                    state[layer][param] = val;
-                    render();
-                });
-            });
-
-            document.querySelectorAll(`.mode-chip[data-layer="${layer}"]`).forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll(`.mode-chip[data-layer="${layer}"]`).forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    state[layer].mode = e.target.dataset.mode;
-                    render();
-                });
-            });
-        }
-
-        function resetAll() {
-            inputText.value = '';
-            state.red = { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 };
-            state.green = { mode: 'chaos', density: 0.45, structure: 0.7, thickness: 2 };
-            // Reset UI
-            document.getElementById('red-density').value = 45;
-            document.getElementById('red-structure').value = 70;
-            document.getElementById('red-thickness').value = 2;
-            document.getElementById('green-density').value = 45;
-            document.getElementById('green-structure').value = 70;
-            document.getElementById('green-thickness').value = 2;
-            
-            stopScan();
-            render();
-        }
-
-        // === AUDIO ENGINE ===
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        let audioCtx = null;
-        let scanOsc = null;
-        let scanGain = null;
-
-        function initAudio() {
-            if(!audioCtx) audioCtx = new AudioCtx();
-        }
-
-        function startScanSound() {
-            initAudio();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // Create Oscillator
-            scanOsc = audioCtx.createOscillator();
-            scanGain = audioCtx.createGain();
-            
-            scanOsc.type = 'sine';
-            scanOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
-            
-            scanGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            
-            scanOsc.connect(scanGain);
-            scanGain.connect(audioCtx.destination);
-            
-            scanOsc.start();
-            
-            // Modulate frequency for "siren" effect
-            scanOsc.frequency.linearRampToValueAtTime(1000, audioCtx.currentTime + 1.0);
+            // Убираем оверлей
             setTimeout(() => {
-                if(scanOsc) scanOsc.frequency.linearRampToValueAtTime(200, audioCtx.currentTime + 1.0);
-            }, 1000);
+                overlay.style.display = 'none';
+                if (line.parentNode) line.parentNode.removeChild(line);
+            }, 700);
         }
 
-        function stopScanSound() {
-            if (scanOsc) {
-                scanOsc.stop();
-                scanOsc.disconnect();
-                scanOsc = null;
+        // --- ЗАГРУЗКА ФАЙЛА ---
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            statusEl.innerText = "Initiating Extraction Ritual...";
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Показываем загруженное изображение
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(0, 0, 512, 512);
+
+                    const scale = Math.min(512 / img.width, 512 / img.height);
+                    const w = img.width * scale;
+                    const h = img.height * scale;
+                    const x = (512 - w) / 2;
+                    const y = (512 - h) / 2;
+                    ctx.drawImage(img, x, y, w, h);
+
+                    performRitualScan(img);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            e.target.value = '';
+        }
+
+        // --- КАМЕРА (оставлена почти без изменений) ---
+        async function startScan() {
+            if (isScanning) return;
+            try {
+                statusEl.innerText = "Starting Camera...";
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                video.play();
+                video.classList.remove('hidden');
+                scanLine.style.display = 'block';
+               
+                streamTrack = stream.getTracks()[0];
+                isScanning = true;
+                requestAnimationFrame(tick);
+            } catch (e) {
+                alert("Камера недоступна");
+                statusEl.innerText = "Camera Error";
             }
         }
 
-        function playSuccess() {
-            initAudio();
-            stopScanSound();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            const now = audioCtx.currentTime;
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, now);
-            osc.frequency.setValueAtTime(1200, now + 0.1); // Crystal Ding
-            
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-            
-            osc.start(now);
-            osc.stop(now + 0.5);
-        }
-
-        function playError() {
-            initAudio();
-            stopScanSound();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            const now = audioCtx.currentTime;
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(150, now);
-            
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            
-            osc.start(now);
-            osc.stop(now + 0.3);
-        }
-
-        // === SCANNER LOGIC ===
-        let isScanning = false;
-        let videoStream = null;
-        let audioLoop = null;
-
-        function startScan() {
-            if (isScanning) return;
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => {
-                    videoStream = stream;
-                    video.srcObject = stream;
-                    video.play();
-                    document.body.classList.add('scan-active');
-                    isScanning = true;
-                    statusText.innerText = "Scanning...";
-                    
-                    // Start Audio Loop
-                    startScanSound();
-                    
-                    requestAnimationFrame(scanTick);
-                })
-                .catch(err => {
-                    alert("Camera Access Denied");
+        function tick() {
+            if (!isScanning) return;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const code = processQRFromSource(video);
+                if (code) {
+                    try {
+                        input.value = decodeURIComponent(escape(code.data));
+                    } catch (e) {
+                        input.value = code.data;
+                    }
                     stopScan();
-                });
+                    draw();
+                    statusEl.innerText = "Decoded!";
+                    return;
+                }
+            }
+            requestAnimationFrame(tick);
         }
 
         function stopScan() {
             isScanning = false;
-            document.body.classList.remove('scan-active');
-            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
-            video.srcObject = null;
-            stopScanSound();
-        }
-
-        function scanTick() {
-            if (!isScanning) return;
-            
-            // Offscreen processing
-            const offscreen = document.createElement('canvas');
-            offscreen.width = 512; offscreen.height = 512;
-            const offCtx = offscreen.getContext('2d');
-            offCtx.drawImage(video, 0, 0, 512, 512);
-
-            const imageData = offCtx.getImageData(0, 0, 512, 512);
-            const data = imageData.data;
-            
-            // Blue Channel Isolation
-            for (let i = 0; i < data.length; i += 4) {
-                const b = data[i + 2]; // Blue
-                data[i] = b;     // R = B
-                data[i + 1] = b; // G = B
-                // data[i + 2] is already B
+            if (streamTrack) {
+                streamTrack.stop();
+                streamTrack = null;
             }
-
-            const code = jsQR(data, 512, 512, { inversionAttempts: "attemptBoth" });
-
-            if (code) {
-                inputText.value = decodeURIComponent(escape(code.data));
-                stopScan();
-                playSuccess();
-                render(); // Regenerate with new text
-                statusText.innerText = "Decoded!";
-            } else {
-                requestAnimationFrame(scanTick);
-            }
+            video.classList.add('hidden');
+            scanLine.style.display = 'none';
         }
 
-        // File Scan
-        function triggerFileScan() {
-            document.getElementById('file-input').click();
-        }
-
-        document.getElementById('file-input').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            document.body.classList.add('scan-active');
-            statusText.innerText = "Scanning File...";
-            startScanSound();
-
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const img = new Image();
-                img.onload = () => {
-                    const offscreen = document.createElement('canvas');
-                    offscreen.width = 512; offscreen.height = 512;
-                    const offCtx = offscreen.getContext('2d');
-                    offCtx.drawImage(img, 0, 0, 512, 512);
-                    const imageData = offCtx.getImageData(0, 0, 512, 512);
-                    const data = imageData.data;
-
-                    // Blue Isolation
-                    for (let i = 0; i < data.length; i += 4) {
-                        const b = data[i + 2];
-                        data[i] = b; data[i + 1] = b;
-                    }
-
-                    setTimeout(() => { // Small delay for visual effect
-                        const code = jsQR(data, 512, 512, { inversionAttempts: "attemptBoth" });
-
-                        if (code) {
-                            inputText.value = decodeURIComponent(escape(code.data));
-                            playSuccess();
-                            render();
-                            statusText.innerText = "Decoded from File";
-                        } else {
-                            playError();
-                            statusText.innerText = "No QR Found";
-                            alert("QR not found in Blue Channel.");
-                        }
-                        
-                        document.body.classList.remove('scan-active');
-                        stopScanSound();
-                        e.target.value = '';
-                    }, 1000);
-                };
-                img.src = evt.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        function saveImage() {
+        function saveImg() {
             const link = document.createElement('a');
-            link.download = 'qrnament-v2.2.png';
-            link.href = canvas.toDataURL();
+            link.download = 'QRnament.png';
+            link.href = canvas.toDataURL('image/png');
             link.click();
         }
 
-        // === INIT ===
-        inputText.addEventListener('input', render);
-        bindControls('red');
-        bindControls('green');
-        render();
+        function resetAll() {
+            stopScan();
+            input.value = "";
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0,0,512,512);
+            statusEl.innerText = "Ready";
+        }
 
+        // Инициализация
+        input.addEventListener('input', draw);
+        draw();
     </script>
 </body>
 </html>
