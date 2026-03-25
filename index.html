@@ -10,12 +10,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
         body { background: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        canvas { image-rendering: pixelated; }
         
         /* Logo Colors */
         .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
         .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
         
+        /* Canvas & Video Constraints */
+        #canvas, #video {
+            max-width: 100%; 
+            height: 100%; 
+            object-fit: contain; /* Prevents stretching */
+            image-rendering: pixelated;
+        }
+
         /* Scan FX */
         .scan-line { 
             position:absolute; left:0; right:0; height:4px; 
@@ -23,9 +30,8 @@
             top:0; z-index: 20; pointer-events: none;
             display: none;
         }
-        @keyframes scanMove { 0% {top:0%} 100% {top:100%} }
         
-        #video { transform: scaleX(-1); }
+        #video { transform: scaleX(-1); background: #000; }
         
         /* Flash Effect */
         .flash-overlay {
@@ -83,13 +89,10 @@
             </div>
 
             <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300">Links</h3>
+                <h3 class="font-bold mb-2 text-zinc-300">Contacts</h3>
                 <div class="flex flex-col gap-2 text-xs">
-                    <a href="https://zenodo.org/records/18895764" target="_blank" class="text-blue-400 hover:underline">Zenodo Research</a>
-                    <a href="https://medium.com/@Bakminsterfuler/sci-universal-model-905efe92e766" target="_blank" class="text-blue-400 hover:underline">Medium Article</a>
-                    <a href="https://telegra.ph/White-Paper-SCI-Encoding-02-22" target="_blank" class="text-blue-400 hover:underline">White Paper (UA)</a>
-                    <a href="https://telegra.ph/RSS-Reflectance-Synchronized-System-02-19" target="_blank" class="text-blue-400 hover:underline">RSS System</a>
-                    <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400 mt-2">bakminsterfuler@gmail.com</a>
+                    <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400 hover:text-white">bakminsterfuler@gmail.com</a>
+                    <a href="https://astra31415926.github.io/" target="_blank" class="text-blue-400 hover:underline">astra31415926.github.io</a>
                 </div>
             </div>
         </div>
@@ -104,18 +107,21 @@
         </button>
     </header>
 
+    <!-- Controls -->
     <div class="mb-4 relative flex gap-2">
         <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-blue-500 outline-none h-16 text-sm text-white placeholder-zinc-600" placeholder="Text..."></textarea>
-        <button onclick="generateOrnament()" class="bg-white text-black font-bold px-4 rounded-2xl text-xs uppercase tracking-widest btn-active transition-transform">Gen</button>
+        <button onclick="generateOrnament()" class="bg-white text-black font-black px-4 rounded-2xl text-xs uppercase tracking-widest btn-active transition-transform">Gen</button>
     </div>
 
+    <!-- Display Container -->
     <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
         <canvas id="canvas" width="1024" height="1024" class="w-full h-full"></canvas>
-        <video id="video" class="absolute inset-0 w-full h-full object-cover hidden" playsinline></video>
+        <video id="video" class="absolute inset-0 w-full h-full hidden" playsinline></video>
         <div id="scan-line" class="scan-line"></div>
         <div id="flash-layer" class="flash-overlay"></div>
     </div>
 
+    <!-- Actions -->
     <div class="flex flex-col gap-3">
         <button onclick="saveImg()" class="w-full py-4 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest btn-active transition-transform">Save PNG</button>
         
@@ -146,29 +152,18 @@
             noiseSource: null
         };
 
-        // --- SPRITES LIBRARY (20 Binary 5x5 Matrices) ---
-        // 1 = Black, 0 = White
-        const SPRITES = [
-            [[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]], // Corners
-            [[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]], // Plus
-            [[1,1,0,0,0],[1,0,0,0,0],[0,0,0,0,1],[0,0,0,1,1],[0,0,1,0,0]], // S shape
-            [[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]], // Diamond filled
-            [[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1]], // X
-            [[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]], // Square
-            [[0,0,0,0,0],[0,1,1,1,0],[0,1,1,1,0],[0,1,1,1,0],[0,0,0,0,0]], // Block
-            [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]], // L
-            [[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]], // Line
-            [[1,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]], // J
-            [[0,0,1,1,1],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0]], // Inverse J
-            [[1,1,1,1,0],[1,0,0,0,0],[1,1,1,0,0],[1,0,0,0,0],[1,0,0,0,0]], // Misc
-            [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]], // O
-            [[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]], // Cross
-            [[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0]], // Diag
-            [[1,1,0,1,1],[1,1,0,1,1],[0,0,0,0,0],[1,1,0,1,1],[1,1,0,1,1]], // Window
-            [[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0]], // Dots
-            [[1,1,1,1,1],[1,0,1,0,1],[1,1,1,1,1],[1,0,1,0,1],[1,1,1,1,1]], // Complex
-            [[0,0,0,0,0],[0,1,1,1,0],[0,1,0,1,0],[0,1,1,1,0],[0,0,0,0,0]], // Frame
-            [[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1]]  // Checker
+        // --- SPRITE LIBRARY (20 Sprites, 5x5) ---
+        const SPRITE_LIB = [
+          [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,1,1,1,0, 0,0,1,0,0], [1,1,1,1,1, 1,0,0,0,1, 1,0,0,0,1, 1,0,0,0,1, 1,1,1,1,1],
+          [0,0,1,0,0, 0,0,1,0,0, 1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0], [1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1],
+          [1,1,1,1,1, 0,0,0,0,1, 1,1,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [1,1,1,1,1, 1,0,1,0,1, 1,0,1,0,1, 1,0,1,0,1, 1,1,1,1,1],
+          [1,1,1,1,1, 1,0,0,0,0, 1,1,1,1,1, 0,0,0,0,1, 1,1,1,1,1], [1,1,0,1,1, 1,1,0,1,1, 0,0,0,0,0, 1,1,0,1,1, 1,1,0,1,1],
+          [1,1,1,1,1, 1,0,0,0,0, 1,0,1,1,1, 1,0,1,0,1, 1,0,1,1,1], [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,0,0,0,0, 0,0,0,0,0],
+          [1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1], [1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1],
+          [0,1,1,1,0, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 0,1,1,1,0], [1,1,0,1,1, 1,1,0,1,1, 0,0,1,0,0, 1,1,0,1,1, 1,1,0,1,1],
+          [1,1,1,1,1, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0],
+          [1,1,1,0,0, 1,1,1,0,0, 1,1,1,0,0, 0,0,0,0,0, 0,0,0,0,0], [0,0,0,0,1, 0,0,0,1,0, 0,0,1,0,0, 0,1,0,0,0, 1,0,0,0,0],
+          [1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,1,1,1,1], [1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0]
         ];
 
         // --- LOCALIZATION ---
@@ -234,7 +229,7 @@
                 noiseGain.connect(state.audioCtx.destination);
                 whiteNoise.start();
 
-                // 2. Sine Sweep (Sub-frequency)
+                // 2. Sine Sweep
                 const osc = state.audioCtx.createOscillator();
                 osc.type = 'sine';
                 const oscGain = state.audioCtx.createGain();
@@ -305,40 +300,37 @@
             state.frozen = false;
 
             try {
+                // UTF-8 Handling
                 const utf8Text = unescape(encodeURIComponent(text));
                 const qr = qrcode(0, 'M');
                 qr.addData(utf8Text);
                 qr.make();
                 
                 const moduleCount = qr.getModuleCount();
-                const quietZone = 2;
+                const quietZone = 2; // 2 modules white border
                 const totalModules = moduleCount + quietZone * 2;
                 const modSize = 1024 / totalModules;
                 
                 // 1. Generate Ornamental Fabric for Red & Green
                 const fabricR = buildFabricGrid(totalModules);
-                const fabricG = buildFabricGrid(totalModules); // Separate random seed/logic
+                const fabricG = buildFabricGrid(totalModules);
                 
                 // 2. Draw Composite
                 ctx.globalCompositeOperation = "source-over";
-                ctx.fillStyle = "#000";
+                ctx.fillStyle = "#FFFFFF"; // White background for QR standard
+                ctx.fillRect(0, 0, 1024, 1024);
+
+                // Composite Layers (Use multiply to print colors on white, OR screen on black?)
+                // Standard QR needs high contrast. Let's stick to "Light" mode concept.
+                // We want Black background, Color codes.
+                // So: Fill Black -> Screen colors.
+                
+                ctx.fillStyle = "#000000";
                 ctx.fillRect(0, 0, 1024, 1024);
                 
-                // White border (Quiet Zone)
-                ctx.fillStyle = "#FFFFFF";
-                ctx.fillRect(0, 0, 1024, 1024); // Base is white for QR standard
-
-                // Composite Layers
-                ctx.globalCompositeOperation = "multiply"; // Colors mix subtractively on white
-
-                // Draw Background Ornaments (Red)
-                ctx.fillStyle = "#00FFFF"; // Cyan (Red inverted on screen? No, let's use standard RGB logic on black)
-                // Logic: We want Red/Green/Blue layers.
-                // Strategy: Draw on black with "lighten" (screen) mode.
-                
                 ctx.globalCompositeOperation = "screen";
-                
-                // Red Channel (Ornament R)
+
+                // Red Channel
                 for(let r=0; r<totalModules; r++) {
                     for(let c=0; c<totalModules; c++) {
                         if(fabricR[r][c]) {
@@ -348,7 +340,7 @@
                     }
                 }
 
-                // Green Channel (Ornament G)
+                // Green Channel
                 for(let r=0; r<totalModules; r++) {
                     for(let c=0; c<totalModules; c++) {
                         if(fabricG[r][c]) {
@@ -358,8 +350,12 @@
                     }
                 }
 
-                // Blue Channel (QR Code Data)
-                // QR is placed inside the quiet zone
+                // Blue Channel (QR Code)
+                // Clear the center area for QR (Quiet Zone logic inside the pattern)
+                // Actually, just drawing blue on top is fine.
+                // But let's clear the middle to ensure QR is readable if ornaments are dense.
+                // No, keep it "fabric". 
+                
                 for (let r = 0; r < moduleCount; r++) {
                     for (let c = 0; c < moduleCount; c++) {
                         if (qr.isDark(r, c)) {
@@ -374,7 +370,7 @@
 
             } catch(e) {
                 console.error(e);
-                statusEl.innerText = "Error: " + e.message;
+                statusEl.innerText = "Error";
             }
         }
 
@@ -389,20 +385,33 @@
             // Octant loop: 0 <= y <= x <= center
             for (let y = 0; y <= center; y++) {
                 for (let x = 0; x <= y; x++) {
+                    
                     // Determine value from Sprites
                     // Map absolute coords to sprite texture coords
-                    // Using simple modulo tiling
-                    const sX = x % 5;
-                    const sY = y % 5;
-                    const spriteIdx = Math.floor(Math.random() * 20); // Pure random sprite per pixel? No, too noisy.
+                    // We use a deterministic pseudo-random based on tile position
                     
-                    // Let's pick sprite based on region to maintain some texture coherence
-                    const regionX = Math.floor(x / 5);
-                    const regionY = Math.floor(y / 5);
-                    const seed = (regionX * 100 + regionY) % 20; // Deterministic pseudo-random
-                    const sprite = SPRITES[seed]; 
+                    // 1. Find which tile we are in (5x5 grid)
+                    // Center is (0,0). 
+                    // Tiles span: Center tile is [-2, 2].
+                    // shift coords by +2 so center tile starts at 0.
                     
-                    let val = sprite[sY][sX]; // 0 or 1
+                    const tx = x + 2;
+                    const ty = y + 2;
+                    
+                    const tileX = Math.floor(tx / 5);
+                    const tileY = Math.floor(ty / 5);
+                    
+                    const localX = tx % 5;
+                    const localY = ty % 5;
+                    
+                    // 2. Select Sprite for this tile
+                    const seed = (tileX * 1337 + tileY * 7919) % SPRITE_LIB.length; // Simple hash
+                    const sprite = SPRITE_LIB[seed];
+                    
+                    // 3. Get Pixel
+                    // Sprite is flat array [0..24]
+                    const pixelIndex = localY * 5 + localX;
+                    const val = sprite[pixelIndex]; // 0 or 1
 
                     // Apply 8-fold symmetry
                     const points = [
@@ -446,29 +455,27 @@
             const imageData = offCtx.getImageData(0, 0, 1024, 1024);
             const data = imageData.data;
 
-            // Blue Channel Isolation (Thresholding)
-            // Assuming we want to read the Blue QR Code.
-            // If pixel is Blue, make it White (for jsQR logic). Else Black.
-            // jsQR expects dark on light or light on dark.
-            // Let's convert Blue channel to grayscale.
-            
+            // Blue Channel Isolation
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i+1];
                 const b = data[i+2];
                 
-                // Isolate Blue: if Blue is dominant and bright?
-                // Actually, simply taking the Blue channel values works best for blueprints.
-                let val = b;
-                // Apply threshold
-                let mono = val > 128 ? 255 : 0; 
+                // Logic: Blue QR on Black Background.
+                // We want to isolate Blue channel.
+                // Standard QR scanners look for Dark/Light.
+                // If Blue is present -> Dark? No, we want Blue to be the 'Dark' data?
+                // Actually, let's make Blue channel act as intensity.
+                // High Blue -> Dark.
+                // Low Blue -> Light.
+                // This inverts the typical "Black on White" logic, but jsQR handles inversion.
                 
-                // Invert if needed (White QR on Black?) -> Standard QR is Black on White.
-                // Our code is Blue on Black. So we need to invert for jsQR?
-                // jsQR can handle inversion. Let's just feed the channel.
-                data[i] = mono;
-                data[i+1] = mono;
-                data[i+2] = mono;
+                let val = b; 
+                // Let's just pass the Blue channel as Grayscale.
+                
+                data[i] = val;
+                data[i+1] = val;
+                data[i+2] = val;
             }
 
             return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
@@ -486,6 +493,7 @@
                     video.srcObject = stream;
                     video.play();
                     video.classList.remove('hidden');
+                    stream.getTracks()[0]; // Track handled in state
                     statusEl.innerText = "Scanning...";
                     AudioEngine.startScanSound();
                     requestAnimationFrame(camScanTick);
@@ -501,7 +509,8 @@
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 const code = processQRFromSource(video, video.videoWidth, video.videoHeight);
                 if (code) {
-                    // 1. Freeze Frame
+                    // FOUND!
+                    // 1. Capture Frame to Canvas
                     // Draw current video frame (cropped) to main canvas
                     const aspect = video.videoWidth / video.videoHeight;
                     let sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
@@ -546,29 +555,31 @@
         }
 
         function performRitual(code) {
-            state.isScanning = true; // Lock
+            state.isScanning = true; // Lock interactions
             
-            // Start Audio if not started (file scan case)
+            // 1. Start Sound & Animation
             AudioEngine.startScanSound();
-
-            // 1. Scan Line Animation
+            
             scanLine.style.display = 'block';
             scanLine.style.top = '0%';
             scanLine.style.transition = 'none';
-            void scanLine.offsetWidth; // Reflow
+            // Force reflow
+            void scanLine.offsetHeight;
+            
             scanLine.style.transition = 'top 2s linear';
             scanLine.style.top = '100%';
             statusEl.innerText = "Extracting...";
 
-            // 2. Wait 2s
+            // 2. Wait for animation (2s)
             setTimeout(() => {
-                // 3. Flash & Sound
+                // 3. Flash & Success Sound
                 flashLayer.style.opacity = '1';
                 AudioEngine.playSuccess();
                 
                 setTimeout(() => {
                     flashLayer.style.opacity = '0';
                     
+                    // 4. Result
                     if (code) {
                         try {
                             document.getElementById('main-input').value = decodeURIComponent(escape(code.data));
@@ -576,16 +587,18 @@
                             document.getElementById('main-input').value = code.data;
                         }
                         
-                        // Frozen State: 30% opacity
+                        // 5. Frozen State (Dimmed Image)
                         ctx.fillStyle = "rgba(0,0,0,0.7)";
-                        ctx.fillRect(0,0,1024,1024);
+                        ctx.fillRect(0, 0, 1024, 1024);
                         
                         statusEl.innerText = "Decoded!";
                         state.frozen = true;
                     } else {
                         AudioEngine.playSuccess(); // Still play sound to indicate end
                         statusEl.innerText = "No Data Found";
-                        ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024);
+                        // Reset to black screen
+                        ctx.fillStyle = "#000";
+                        ctx.fillRect(0, 0, 1024, 1024);
                     }
                     
                     state.isScanning = false;
@@ -618,6 +631,7 @@
         // --- EVENT LISTENERS ---
         
         document.getElementById('main-input').addEventListener('input', () => {
+            // If frozen, typing breaks the ice and generates new QR
             if(state.frozen) {
                 state.frozen = false;
                 generateOrnament();
@@ -626,7 +640,8 @@
 
         // Init
         setLang('ua');
-        generateOrnament();
+        // Draw initial black screen
+        ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024); 
 
     </script>
 </body>
