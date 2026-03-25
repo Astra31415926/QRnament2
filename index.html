@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament Lab v3.0</title>
+    <title>QRnament Lab v3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -50,16 +50,6 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #111; }
         ::-webkit-scrollbar-thumb { background: #333; }
-
-        /* Inputs */
-        input[type=range] {
-            -webkit-appearance: none; width: 100%; height: 4px;
-            background: #333; border-radius: 2px; outline: none;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 16px; height: 16px;
-            background: #fff; border-radius: 50%; cursor: pointer;
-        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
@@ -79,22 +69,17 @@
                 <h2 class="text-xl font-black mb-2 flex items-center gap-2">
                     <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
                 </h2>
-                <p class="text-zinc-500">Lab v3.0 // Samurai Scan</p>
-            </div>
-
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_usage">Як користуватися</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_usage_text">Створювати кольорові (спектральні) 2D-коди. Тестувати їх зчитування з екрана або зображення.</p>
+                <p class="text-zinc-500">Lab v3.5 // Spectral Shogun</p>
             </div>
 
             <div class="border-t border-zinc-800 pt-4">
                 <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_tech">Технологія</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994). Підхід автора дозволяє зменшити ефект міжканального змішування (cross-talk) при друці.</p>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994).</p>
             </div>
 
             <div class="border-t border-zinc-800 pt-4">
                 <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_author">Автор</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_author_text">Михайло Кашкаров — сайнс-арт художник, який працює на перетині світлочутливого живопису та спектрального дизайну.</p>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_author_text">Михайло Кашкаров — сайнс-арт художник, авторська техніка світлочутливого живопису та спектрального дизайну.</p>
             </div>
 
             <div class="border-t border-zinc-800 pt-4">
@@ -103,6 +88,7 @@
                     <a href="https://zenodo.org/records/18895764" target="_blank" class="text-blue-400 hover:underline">Zenodo Research</a>
                     <a href="https://medium.com/@Bakminsterfuler/sci-universal-model-905efe92e766" target="_blank" class="text-blue-400 hover:underline">Medium Article</a>
                     <a href="https://telegra.ph/White-Paper-SCI-Encoding-02-22" target="_blank" class="text-blue-400 hover:underline">White Paper (UA)</a>
+                    <a href="https://telegra.ph/RSS-Reflectance-Synchronized-System-02-19" target="_blank" class="text-blue-400 hover:underline">RSS System</a>
                     <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400 mt-2">bakminsterfuler@gmail.com</a>
                 </div>
             </div>
@@ -118,27 +104,9 @@
         </button>
     </header>
 
-    <div class="mb-4 relative">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-blue-500 outline-none h-16 text-sm text-white placeholder-zinc-600 pr-12" placeholder="Text..."></textarea>
-        <button onclick="resetAll()" class="absolute right-3 top-3 text-zinc-500 hover:text-white transition-colors p-1" title="Reset">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
-    </div>
-
-    <!-- Advanced Controls -->
-    <div class="mb-4 grid grid-cols-3 gap-2">
-        <div class="bg-zinc-900 p-2 rounded-lg">
-            <label class="text-[9px] text-zinc-500 block mb-1">DENSITY</label>
-            <input type="range" id="ctrl-density" min="0" max="100" value="45">
-        </div>
-        <div class="bg-zinc-900 p-2 rounded-lg">
-            <label class="text-[9px] text-zinc-500 block mb-1">STRUCTURE</label>
-            <input type="range" id="ctrl-structure" min="0" max="100" value="70">
-        </div>
-        <div class="bg-zinc-900 p-2 rounded-lg">
-            <label class="text-[9px] text-zinc-500 block mb-1">THICKNESS</label>
-            <input type="range" id="ctrl-thickness" min="1" max="5" value="2">
-        </div>
+    <div class="mb-4 relative flex gap-2">
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-blue-500 outline-none h-16 text-sm text-white placeholder-zinc-600" placeholder="Text..."></textarea>
+        <button onclick="generateOrnament()" class="bg-white text-black font-bold px-4 rounded-2xl text-xs uppercase tracking-widest btn-active transition-transform">Gen</button>
     </div>
 
     <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
@@ -171,46 +139,61 @@
         
         let state = {
             lang: 'ua',
-            frozen: false, // Is the canvas showing a frozen scan result?
+            frozen: false,
             isScanning: false,
             streamTrack: null,
             audioCtx: null,
-            noiseSource: null, // For stopping scan sound
-            // Ornament params
-            density: 0.45,
-            structure: 0.7,
-            thickness: 2
+            noiseSource: null
         };
+
+        // --- SPRITES LIBRARY (20 Binary 5x5 Matrices) ---
+        // 1 = Black, 0 = White
+        const SPRITES = [
+            [[1,0,0,0,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,0,0,0,1]], // Corners
+            [[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]], // Plus
+            [[1,1,0,0,0],[1,0,0,0,0],[0,0,0,0,1],[0,0,0,1,1],[0,0,1,0,0]], // S shape
+            [[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]], // Diamond filled
+            [[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1]], // X
+            [[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]], // Square
+            [[0,0,0,0,0],[0,1,1,1,0],[0,1,1,1,0],[0,1,1,1,0],[0,0,0,0,0]], // Block
+            [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]], // L
+            [[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]], // Line
+            [[1,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]], // J
+            [[0,0,1,1,1],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0]], // Inverse J
+            [[1,1,1,1,0],[1,0,0,0,0],[1,1,1,0,0],[1,0,0,0,0],[1,0,0,0,0]], // Misc
+            [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]], // O
+            [[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]], // Cross
+            [[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0]], // Diag
+            [[1,1,0,1,1],[1,1,0,1,1],[0,0,0,0,0],[1,1,0,1,1],[1,1,0,1,1]], // Window
+            [[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0]], // Dots
+            [[1,1,1,1,1],[1,0,1,0,1],[1,1,1,1,1],[1,0,1,0,1],[1,1,1,1,1]], // Complex
+            [[0,0,0,0,0],[0,1,1,1,0],[0,1,0,1,0],[0,1,1,1,0],[0,0,0,0,0]], // Frame
+            [[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1]]  // Checker
+        ];
 
         // --- LOCALIZATION ---
         const i18n = {
             ua: {
-                menu_usage: "Як користуватися",
-                menu_usage_text: "Створювати кольорові (спектральні) 2D-коди. Тестувати їх зчитування з екрана або зображення.",
                 menu_tech: "Технологія",
-                menu_tech_text: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994). Підхід автора дозволяє зменшити ефект міжканального змішування (cross-talk) при друці.",
+                menu_tech_text: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994).",
                 menu_author: "Автор",
-                menu_author_text: "Михайло Кашкаров — сайнс-арт художник, який працює на перетині світлочутливого живопису та спектрального дизайну."
+                menu_author_text: "Михайло Кашкаров — сайнс-арт художник, авторська техніка світлочутливого живопису та спектрального дизайну."
             },
             en: {
-                menu_usage: "How to Use",
-                menu_usage_text: "Create color (spectral) 2D codes. Test their reading from a screen or image.",
                 menu_tech: "Technology",
-                menu_tech_text: "Color 2D codes extend the classic QR code (Denso Wave, 1994). The author's approach minimizes the cross-talk effect during printing.",
+                menu_tech_text: "Color 2D codes extend the classic QR code (Denso Wave, 1994).",
                 menu_author: "Author",
-                menu_author_text: "Mykhailo Kashkarov — a science-art artist working at the intersection of light-sensitive painting and spectral design."
+                menu_author_text: "Mykhailo Kashkarov — a science-art artist, specializing in the original technique of light-sensitive painting and spectral design."
             }
         };
 
         function setLang(lang) {
             state.lang = lang;
-            // Update UI buttons
             document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
             document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
             document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
             document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
             
-            // Update text content
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if(i18n[lang][key]) el.textContent = i18n[lang][key];
@@ -227,7 +210,7 @@
                 this.init();
                 if(state.noiseSource) return;
                 
-                // Create White Noise
+                // 1. White Noise
                 const bufferSize = 2 * state.audioCtx.sampleRate;
                 const noiseBuffer = state.audioCtx.createBuffer(1, bufferSize, state.audioCtx.sampleRate);
                 const output = noiseBuffer.getChannelData(0);
@@ -237,32 +220,43 @@
                 whiteNoise.buffer = noiseBuffer;
                 whiteNoise.loop = true;
 
-                // Filter for "Saber" sound
+                // Filter for "Saber"
                 const filter = state.audioCtx.createBiquadFilter();
                 filter.type = 'bandpass';
-                filter.frequency.value = 800;
-                filter.Q.value = 1;
+                filter.frequency.value = 2000;
+                filter.Q.value = 0.5;
 
-                // Sweep frequency
-                const now = state.audioCtx.currentTime;
-                filter.frequency.setValueAtTime(1500, now);
-                filter.frequency.exponentialRampToValueAtTime(200, now + 2.0);
-
-                const gain = state.audioCtx.createGain();
-                gain.gain.value = 0.15;
+                const noiseGain = state.audioCtx.createGain();
+                noiseGain.gain.value = 0.15;
 
                 whiteNoise.connect(filter);
-                filter.connect(gain);
-                gain.connect(state.audioCtx.destination);
-                
+                filter.connect(noiseGain);
+                noiseGain.connect(state.audioCtx.destination);
                 whiteNoise.start();
+
+                // 2. Sine Sweep (Sub-frequency)
+                const osc = state.audioCtx.createOscillator();
+                osc.type = 'sine';
+                const oscGain = state.audioCtx.createGain();
+                oscGain.gain.value = 0.2;
+                
+                const now = state.audioCtx.currentTime;
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 2.0);
+
+                osc.connect(oscGain);
+                oscGain.connect(state.audioCtx.destination);
+                osc.start();
+
                 state.noiseSource = whiteNoise;
+                state.oscSource = osc;
             },
 
             stopScanSound() {
                 if(state.noiseSource) {
-                    try { state.noiseSource.stop(); } catch(e) {}
+                    try { state.noiseSource.stop(); state.oscSource.stop(); } catch(e) {}
                     state.noiseSource = null;
+                    state.oscSource = null;
                 }
             },
 
@@ -272,192 +266,209 @@
                 const now = state.audioCtx.currentTime;
 
                 // 1. Shutter Click (Noise burst)
-                const clickBuffer = state.audioCtx.createBuffer(1, state.audioCtx.sampleRate * 0.1, state.audioCtx.sampleRate);
+                const clickBuffer = state.audioCtx.createBuffer(1, state.audioCtx.sampleRate * 0.05, state.audioCtx.sampleRate);
                 const clickOut = clickBuffer.getChannelData(0);
                 for (let i = 0; i < clickOut.length; i++) clickOut[i] = Math.random() * 2 - 1;
                 const click = state.audioCtx.createBufferSource();
                 click.buffer = clickBuffer;
                 const clickGain = state.audioCtx.createGain();
-                clickGain.gain.setValueAtTime(0.5, now);
-                clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                clickGain.gain.setValueAtTime(0.8, now);
+                clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
                 click.connect(clickGain);
                 clickGain.connect(state.audioCtx.destination);
                 click.start(now);
 
-                // 2. Success Chime
-                const osc = state.audioCtx.createOscillator();
-                const oscGain = state.audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, now + 0.1);
-                osc.frequency.setValueAtTime(1100, now + 0.2);
-                oscGain.gain.setValueAtTime(0.2, now + 0.1);
-                oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.connect(oscGain);
-                oscGain.connect(state.audioCtx.destination);
-                osc.start(now + 0.1);
-                osc.stop(now + 0.6);
-            },
-
-            playFail() {
-                this.init();
-                this.stopScanSound();
-                const now = state.audioCtx.currentTime;
-                const osc = state.audioCtx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.value = 100;
-                const gain = state.audioCtx.createGain();
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.connect(gain);
-                gain.connect(state.audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.3);
+                // 2. Bell
+                const bell = state.audioCtx.createOscillator();
+                bell.type = 'sine';
+                bell.frequency.value = 1500;
+                const bellGain = state.audioCtx.createGain();
+                bellGain.gain.setValueAtTime(0.3, now + 0.05);
+                bellGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                bell.connect(bellGain);
+                bellGain.connect(state.audioCtx.destination);
+                bell.start(now + 0.05);
+                bell.stop(now + 0.6);
             }
         };
 
-        // --- SYMMETRY ENGINE ---
+        // --- ORNAMENT ENGINE ---
         
-        // 1. Modular Octant Generator
-        function generateSymmetryCell(size, params) {
-            const data = []; // Array of points
-            const center = Math.floor(size / 2);
-            
-            // Iterate triangle (0 <= y <= x <= center)
-            // Note: In canvas coords, y increases down. 
-            // We treat center as origin (0,0). 
-            // We iterate dx, dy relative to center.
-            
-            for (let dx = 0; dx <= center; dx++) {
-                for (let dy = 0; dy <= dx; dy++) {
-                    
-                    // Logic with params
-                    let v = Math.random();
-                    // Apply structure vs noise logic simply for now
-                    if (v < params.density) {
-                        data.push({x: dx, y: dy});
-                    }
-                }
-            }
-            return data;
-        }
-
-        // 2. Grid Builder (8-fold symmetry)
-        function buildOrnamentGrid(size, cellData) {
-            const grid = Array(size).fill(0).map(() => Array(size).fill(0));
-            const center = Math.floor(size / 2);
-
-            cellData.forEach(p => {
-                const dx = p.x;
-                const dy = p.y;
-
-                // 8 symmetric points (Dihedral Group D4)
-                // Note: Canvas Y is inverted. 
-                // We map logical (dx, dy) to canvas (x, y) -> (center+dx, center-dy)
-                
-                const points = [
-                    [ dx,  dy], [ dy,  dx], [-dx,  dy], [-dy,  dx],
-                    [ dx, -dy], [ dy, -dx], [-dx, -dy], [-dy, -dx]
-                ];
-
-                points.forEach(([px, py]) => {
-                    const gx = center + px;
-                    const gy = center - py; // Inverted Y
-                    if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
-                        grid[gy][gx] = 1;
-                    }
-                });
-            });
-            return grid;
-        }
-
-        // --- RENDER ENGINE ---
-        function draw() {
-            const rawText = document.getElementById('main-input').value;
-            if (!rawText) { 
-                ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024); 
-                statusEl.innerText = "Ready";
+        function generateOrnament() {
+            const text = document.getElementById('main-input').value;
+            if (!text) { 
+                ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024);
+                statusEl.innerText = "Input text...";
                 return; 
             }
-
-            state.frozen = false; // Unfreeze on draw
             
+            state.frozen = false;
+
             try {
-                // UTF-8 Handling
-                const utf8Text = unescape(encodeURIComponent(rawText));
+                const utf8Text = unescape(encodeURIComponent(text));
                 const qr = qrcode(0, 'M');
                 qr.addData(utf8Text);
                 qr.make();
                 
-                const count = qr.getModuleCount();
-                const modSize = 1024 / count;
+                const moduleCount = qr.getModuleCount();
+                const quietZone = 2;
+                const totalModules = moduleCount + quietZone * 2;
+                const modSize = 1024 / totalModules;
                 
-                // Generate Ornaments
-                const params = {
-                    density: state.density,
-                    structure: state.structure,
-                    thickness: state.thickness
-                };
-
-                // Use modular engine
-                const cellR = generateSymmetryCell(count, params);
-                const ornR = buildOrnamentGrid(count, cellR);
+                // 1. Generate Ornamental Fabric for Red & Green
+                const fabricR = buildFabricGrid(totalModules);
+                const fabricG = buildFabricGrid(totalModules); // Separate random seed/logic
                 
-                // Different seed for Green (using separate generation)
-                const cellG = generateSymmetryCell(count, params); 
-                const ornG = buildOrnamentGrid(count, cellG);
-
-                // Draw
+                // 2. Draw Composite
                 ctx.globalCompositeOperation = "source-over";
                 ctx.fillStyle = "#000";
                 ctx.fillRect(0, 0, 1024, 1024);
                 
-                ctx.globalCompositeOperation = "screen";
+                // White border (Quiet Zone)
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillRect(0, 0, 1024, 1024); // Base is white for QR standard
 
-                for (let r = 0; r < count; r++) {
-                    for (let c = 0; c < count; c++) {
-                        const x = c * modSize, y = r * modSize;
-                        
-                        // Blue (QR)
-                        if (qr.isDark(r, c)) { 
-                            ctx.fillStyle = "#0000FF"; 
-                            ctx.fillRect(x, y, modSize, modSize); 
-                        }
-                        // Red (Ornament)
-                        if (ornR[r][c]) { 
-                            ctx.fillStyle = "#FF0000"; 
-                            ctx.fillRect(x, y, modSize, modSize); 
-                        }
-                        // Green (Ornament)
-                        if (ornG[r][c]) { 
-                            ctx.fillStyle = "#00FF00"; 
-                            ctx.fillRect(x, y, modSize, modSize); 
+                // Composite Layers
+                ctx.globalCompositeOperation = "multiply"; // Colors mix subtractively on white
+
+                // Draw Background Ornaments (Red)
+                ctx.fillStyle = "#00FFFF"; // Cyan (Red inverted on screen? No, let's use standard RGB logic on black)
+                // Logic: We want Red/Green/Blue layers.
+                // Strategy: Draw on black with "lighten" (screen) mode.
+                
+                ctx.globalCompositeOperation = "screen";
+                
+                // Red Channel (Ornament R)
+                for(let r=0; r<totalModules; r++) {
+                    for(let c=0; c<totalModules; c++) {
+                        if(fabricR[r][c]) {
+                            ctx.fillStyle = "#FF0000";
+                            ctx.fillRect(c*modSize, r*modSize, modSize, modSize);
                         }
                     }
                 }
+
+                // Green Channel (Ornament G)
+                for(let r=0; r<totalModules; r++) {
+                    for(let c=0; c<totalModules; c++) {
+                        if(fabricG[r][c]) {
+                            ctx.fillStyle = "#00FF00";
+                            ctx.fillRect(c*modSize, r*modSize, modSize, modSize);
+                        }
+                    }
+                }
+
+                // Blue Channel (QR Code Data)
+                // QR is placed inside the quiet zone
+                for (let r = 0; r < moduleCount; r++) {
+                    for (let c = 0; c < moduleCount; c++) {
+                        if (qr.isDark(r, c)) {
+                            ctx.fillStyle = "#0000FF";
+                            ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
+                        }
+                    }
+                }
+
                 ctx.globalCompositeOperation = "source-over";
-                statusEl.innerText = "Generated: " + count + "x" + count;
-            } catch (e) {
+                statusEl.innerText = "Generated " + moduleCount + "x" + moduleCount;
+
+            } catch(e) {
                 console.error(e);
-                statusEl.innerText = "Error";
+                statusEl.innerText = "Error: " + e.message;
             }
+        }
+
+        function buildFabricGrid(size) {
+            const grid = Array(size).fill(0).map(() => Array(size).fill(0));
+            const center = Math.floor(size / 2);
+            
+            // Tiled Map of Sprites (Virtual)
+            // We create a randomness map to pick sprites
+            // Coordinates relative to center for symmetry
+            
+            // Octant loop: 0 <= y <= x <= center
+            for (let y = 0; y <= center; y++) {
+                for (let x = 0; x <= y; x++) {
+                    // Determine value from Sprites
+                    // Map absolute coords to sprite texture coords
+                    // Using simple modulo tiling
+                    const sX = x % 5;
+                    const sY = y % 5;
+                    const spriteIdx = Math.floor(Math.random() * 20); // Pure random sprite per pixel? No, too noisy.
+                    
+                    // Let's pick sprite based on region to maintain some texture coherence
+                    const regionX = Math.floor(x / 5);
+                    const regionY = Math.floor(y / 5);
+                    const seed = (regionX * 100 + regionY) % 20; // Deterministic pseudo-random
+                    const sprite = SPRITES[seed]; 
+                    
+                    let val = sprite[sY][sX]; // 0 or 1
+
+                    // Apply 8-fold symmetry
+                    const points = [
+                        [x, y], [y, x], [-x, y], [-y, x],
+                        [x, -y], [y, -x], [-x, -y], [-y, -x]
+                    ];
+
+                    points.forEach(([px, py]) => {
+                        const gx = center + px;
+                        const gy = center + py;
+                        if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
+                            grid[gy][gx] = val;
+                        }
+                    });
+                }
+            }
+            return grid;
         }
 
         // --- SCANNER LOGIC ---
 
-        function processQRFromSource(sourceElement) {
+        function processQRFromSource(sourceElement, width, height) {
             const offscreen = document.createElement('canvas');
             offscreen.width = 1024;
             offscreen.height = 1024;
             const offCtx = offscreen.getContext('2d');
-            offCtx.drawImage(sourceElement, 0, 0, 1024, 1024);
+            
+            // Draw with Center Crop
+            const aspect = width / height;
+            let sx = 0, sy = 0, sw = width, sh = height;
+            if (aspect > 1) {
+                sw = height;
+                sx = (width - sw) / 2;
+            } else {
+                sh = width;
+                sy = (height - sh) / 2;
+            }
+            
+            offCtx.drawImage(sourceElement, sx, sy, sw, sh, 0, 0, 1024, 1024);
             
             const imageData = offCtx.getImageData(0, 0, 1024, 1024);
             const data = imageData.data;
 
-            // Blue Channel Isolation
+            // Blue Channel Isolation (Thresholding)
+            // Assuming we want to read the Blue QR Code.
+            // If pixel is Blue, make it White (for jsQR logic). Else Black.
+            // jsQR expects dark on light or light on dark.
+            // Let's convert Blue channel to grayscale.
+            
             for (let i = 0; i < data.length; i += 4) {
-                const b = data[i + 2];
-                data[i] = b; data[i + 1] = b; data[i + 2] = b;
+                const r = data[i];
+                const g = data[i+1];
+                const b = data[i+2];
+                
+                // Isolate Blue: if Blue is dominant and bright?
+                // Actually, simply taking the Blue channel values works best for blueprints.
+                let val = b;
+                // Apply threshold
+                let mono = val > 128 ? 255 : 0; 
+                
+                // Invert if needed (White QR on Black?) -> Standard QR is Black on White.
+                // Our code is Blue on Black. So we need to invert for jsQR?
+                // jsQR can handle inversion. Let's just feed the channel.
+                data[i] = mono;
+                data[i+1] = mono;
+                data[i+2] = mono;
             }
 
             return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
@@ -475,13 +486,12 @@
                     video.srcObject = stream;
                     video.play();
                     video.classList.remove('hidden');
-                    stream.getTracks()[0]; // Track handled in state
                     statusEl.innerText = "Scanning...";
                     AudioEngine.startScanSound();
                     requestAnimationFrame(camScanTick);
                 })
                 .catch(err => {
-                    alert("Camera Error");
+                    alert("Camera Error: " + err.message);
                     stopScan();
                 });
         }
@@ -489,17 +499,21 @@
         function camScanTick() {
             if (!state.isScanning) return;
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const code = processQRFromSource(video);
+                const code = processQRFromSource(video, video.videoWidth, video.videoHeight);
                 if (code) {
-                    // FOUND!
-                    // 1. Capture Frame to Canvas
-                    ctx.drawImage(video, 0, 0, 1024, 1024);
+                    // 1. Freeze Frame
+                    // Draw current video frame (cropped) to main canvas
+                    const aspect = video.videoWidth / video.videoHeight;
+                    let sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
+                    if (aspect > 1) { sw = video.videoHeight; sx = (video.videoWidth - sw) / 2; } 
+                    else { sh = video.videoWidth; sy = (video.videoHeight - sh) / 2; }
+                    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 1024, 1024);
                     
                     // 2. Stop Camera
                     if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
                     video.classList.add('hidden');
                     
-                    // 3. Start Ritual
+                    // 3. Perform Ritual
                     performRitual(code);
                     return;
                 }
@@ -515,12 +529,14 @@
             reader.onload = (evt) => {
                 const img = new Image();
                 img.onload = () => {
-                    // Display Image
-                    ctx.clearRect(0,0,1024,1024);
-                    ctx.drawImage(img, 0, 0, 1024, 1024);
+                    // Draw Image (Cropped) to Canvas
+                    const aspect = img.width / img.height;
+                    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+                    if (aspect > 1) { sw = img.height; sx = (img.width - sw) / 2; } 
+                    else { sh = img.width; sy = (img.height - sh) / 2; }
+                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 1024, 1024);
                     
-                    // Process
-                    const code = processQRFromSource(img);
+                    const code = processQRFromSource(img, img.width, img.height);
                     performRitual(code);
                 };
                 img.src = evt.target.result;
@@ -530,31 +546,29 @@
         }
 
         function performRitual(code) {
-            state.isScanning = true; // Block interactions
+            state.isScanning = true; // Lock
             
-            // 1. Start Sound & Animation
+            // Start Audio if not started (file scan case)
             AudioEngine.startScanSound();
-            
+
+            // 1. Scan Line Animation
             scanLine.style.display = 'block';
             scanLine.style.top = '0%';
             scanLine.style.transition = 'none';
-            // Force reflow
-            void scanLine.offsetHeight;
-            
+            void scanLine.offsetWidth; // Reflow
             scanLine.style.transition = 'top 2s linear';
             scanLine.style.top = '100%';
             statusEl.innerText = "Extracting...";
 
-            // 2. Wait for animation (2s)
+            // 2. Wait 2s
             setTimeout(() => {
-                // 3. Flash & Success Sound
+                // 3. Flash & Sound
                 flashLayer.style.opacity = '1';
                 AudioEngine.playSuccess();
                 
                 setTimeout(() => {
                     flashLayer.style.opacity = '0';
                     
-                    // 4. Result
                     if (code) {
                         try {
                             document.getElementById('main-input').value = decodeURIComponent(escape(code.data));
@@ -562,18 +576,16 @@
                             document.getElementById('main-input').value = code.data;
                         }
                         
-                        // 5. Frozen State (Dimmed Image)
+                        // Frozen State: 30% opacity
                         ctx.fillStyle = "rgba(0,0,0,0.7)";
-                        ctx.fillRect(0, 0, 1024, 1024);
+                        ctx.fillRect(0,0,1024,1024);
                         
                         statusEl.innerText = "Decoded!";
                         state.frozen = true;
                     } else {
-                        AudioEngine.playFail();
+                        AudioEngine.playSuccess(); // Still play sound to indicate end
                         statusEl.innerText = "No Data Found";
-                        // Reset to black screen
-                        ctx.fillStyle = "#000";
-                        ctx.fillRect(0, 0, 1024, 1024);
+                        ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024);
                     }
                     
                     state.isScanning = false;
@@ -596,17 +608,9 @@
             document.getElementById('menu-overlay').classList.toggle('open');
         }
 
-        function resetAll() {
-            stopScan();
-            document.getElementById('main-input').value = "";
-            state.frozen = false;
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,1024,1024);
-            statusEl.innerText = "Ready";
-        }
-
         function saveImg() {
             const link = document.createElement('a');
-            link.download = 'qrnament-v3.png';
+            link.download = 'qrnament-v3.5.png';
             link.href = canvas.toDataURL();
             link.click();
         }
@@ -614,27 +618,15 @@
         // --- EVENT LISTENERS ---
         
         document.getElementById('main-input').addEventListener('input', () => {
-            // If frozen, typing breaks the ice and generates new QR
             if(state.frozen) {
                 state.frozen = false;
+                generateOrnament();
             }
-            draw();
-        });
-
-        // Sliders
-        ['density', 'structure', 'thickness'].forEach(id => {
-            const el = document.getElementById('ctrl-' + id);
-            el.addEventListener('input', (e) => {
-                let val = parseFloat(e.target.value);
-                if(id !== 'thickness') val /= 100;
-                state[id] = val;
-                draw();
-            });
         });
 
         // Init
         setLang('ua');
-        draw();
+        generateOrnament();
 
     </script>
 </body>
