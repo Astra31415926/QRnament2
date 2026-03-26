@@ -3,68 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v3.2 // Spectral Mandala</title>
+    <title>QRnament v3.1 // Spectral 7x7 Mandala</title>
     
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
     <style>
-        body { background: #000; color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            overflow-x: hidden; 
+        }
+        
+        /* Logo Colors */
         .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
         .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
-        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; transform: scaleX(-1); }
-        .scan-line { position: absolute; left: 0; right: 0; height: 4px; background: #00ff41; box-shadow: 0 0 20px #00ff41; top: 0; z-index: 20; display: none; }
-        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        .flash-overlay { position: absolute; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 30; transition: opacity 0.1s; }
-        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; transform: translateX(100%); transition: transform 0.4s; display: flex; flex-direction: column; padding: 2rem; overflow-y: auto; }
+
+        /* Canvas & Video */
+        #canvas {
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            image-rendering: pixelated;
+        }
+
+        #video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            transform: scaleX(-1);
+            display: none;
+        }
+
+        /* Scan FX */
+        .scan-line { 
+            position: absolute; 
+            left: 0; right: 0; 
+            height: 4px; 
+            background: #00ff41; 
+            box-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41; 
+            top: 0; 
+            z-index: 20; 
+            pointer-events: none;
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
+            50% { opacity: 1; box-shadow: 0 0 40px #00ff41, 0 0 10px #fff; height: 6px; }
+            100% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
+        }
+
+        /* Flash Effect */
+        .flash-overlay {
+            position: absolute; 
+            inset: 0; 
+            background: white; 
+            opacity: 0; 
+            pointer-events: none; 
+            z-index: 30;
+            transition: opacity 0.1s;
+        }
+
+        /* Menu Overlay */
+        .menu-overlay {
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.98);
+            z-index: 100; 
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; 
+            flex-direction: column; 
+            padding: 2rem;
+            overflow-y: auto;
+        }
         .menu-overlay.open { transform: translateX(0); }
-        .neon-btn-green { background: rgba(0, 255, 65, 0.05); border: 1px solid #00ff41; box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); transition: all 0.2s; }
-        .neon-btn-green:hover { box-shadow: 0 0 20px #00ff41; }
+
+        /* UI Elements */
+        .btn-active:active { transform: scale(0.96); }
+
+        .neon-btn-green {
+            background: rgba(0, 255, 65, 0.05);
+            border: 1px solid #00ff41;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
+            text-shadow: 0 0 5px #00ff41;
+            transition: all 0.2s;
+        }
+        .neon-btn-green:hover { box-shadow: 0 0 20px #00ff41, inset 0 0 30px rgba(0, 255, 65, 0.1); }
+
+        .neon-text-glow {
+            border: 1px solid #00ff41;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+            transition: all 0.3s;
+        }
+        .neon-text-glow:focus {
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+            border-color: #fff;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
 
+    <!-- Menu Overlay -->
     <div id="menu-overlay" class="menu-overlay">
         <div class="flex justify-between items-center mb-8">
-            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500">&times;</button>
+            <div class="flex gap-2 bg-zinc-800 p-1 rounded-lg border border-white/10">
+                <button onclick="App.setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
+                <button onclick="App.setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
+            </div>
+            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-white">&times;</button>
         </div>
+        
         <div class="space-y-6 text-sm">
-            <h2 class="text-xl font-black">QRnament v3.2</h2>
-            <p class="text-zinc-500">Генератор спектральних мандал на основі 2D-кодів.</p>
+            <div>
+                <h2 class="text-xl font-black mb-2 flex items-center gap-2">
+                    <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+                </h2>
+                <p class="text-neonGreen opacity-70">v3.1 // Spectral Mandala</p>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_usage">📱 Як користуватися</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_usage_text">Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.</p>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_tech">⚙️ Технологія</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах. Авторський підхід дозволяє зробити коди придатними для фізичного носія (друк).</p>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_author">🎨 Автор</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_author_text">Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).</p>
+            </div>
+            
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_science">📚 Наукова база</h3>
+                <div class="flex flex-col gap-2 text-xs text-blue-400 underline">
+                    <a href="https://zenodo.org/records/18895764" target="_blank">Zenodo Research</a>
+                    <a href="https://medium.com/@Bakminsterfuler/sci-universal-model-905efe92e766" target="_blank">Medium Article</a>
+                    <a href="https://telegra.ph/White-Paper-SCI-Encoding-02-22" target="_blank">White Paper (UA)</a>
+                    <a href="https://telegra.ph/RSS-Reflectance-Synchronized-System-02-19" target="_blank">RSS System</a>
+                </div>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_contacts">📩 Контакти</h3>
+                <p class="text-zinc-500 leading-relaxed text-xs">
+                    Email: <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400">bakminsterfuler@gmail.com</a><br>
+                    Портфоліо: <a href="https://astra31415926.github.io/" target="_blank" class="text-blue-400">astra31415926.github.io</a>
+                </p>
+            </div>
         </div>
     </div>
 
     <header class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-black tracking-tighter uppercase">QR<span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span></h1>
-        <button onclick="App.toggleMenu()" class="p-2 border border-white/10 rounded-lg">MENU</button>
+        <h1 class="text-2xl font-black tracking-tighter uppercase">
+            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+        </h1>
+        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors neon-border-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
     </header>
 
+    <!-- Controls -->
     <div class="mb-4 relative">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-emerald-500 outline-none h-16 text-sm" placeholder="Type to generate..."></textarea>
-        <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500">DEL</button>
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow pr-12" placeholder="Type to generate..."></textarea>
+        <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500 transition-colors p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
     </div>
 
-    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl overflow-hidden mb-4 border border-white/5">
+    <!-- Display Container -->
+    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
         <canvas id="canvas" width="1024" height="1024"></canvas>
         <video id="video" playsinline></video>
         <div id="scan-line" class="scan-line"></div>
         <div id="flash-layer" class="flash-overlay"></div>
     </div>
 
+    <!-- Actions -->
     <div class="flex flex-col gap-3">
-        <button onclick="App.save()" class="w-full py-4 neon-btn-green rounded-2xl font-black text-xs uppercase tracking-widest">Save PNG</button>
+        <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
+        
         <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" class="py-4 border border-emerald-500 rounded-2xl text-xs uppercase font-bold">Cam Scan</button>
-            <button onclick="document.getElementById('file-input').click()" class="py-4 border border-emerald-500 rounded-2xl text-xs uppercase font-bold">File Scan</button>
+            <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
+            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
         </div>
         <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <p id="status" class="text-center text-[10px] text-emerald-500 uppercase font-bold mt-4">Ready</p>
+    <p id="status" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Ready</p>
 
     <script>
+        // --- 1. SPRITE LIBRARY 7x7 (60 Modules) ---
         const SPRITE_LIB_7x7 = [
             [73,42,28,127,28,42,73], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
             [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [0,62,34,42,46,32,63],
@@ -88,8 +232,11 @@
             [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
         ];
 
+        // --- 2. APP MODULE ---
         const App = {
-            state: { isScanning: false },
+            state: { lang: 'ua', frozen: false, isScanning: false },
+            els: {},
+
             init() {
                 this.els = {
                     canvas: document.getElementById('canvas'),
@@ -99,150 +246,409 @@
                     scanLine: document.getElementById('scan-line'),
                     flash: document.getElementById('flash-layer'),
                     menu: document.getElementById('menu-overlay'),
-                    fileInput: document.getElementById('file-input'),
-                    ctx: document.getElementById('canvas').getContext('2d')
+                    fileInput: document.getElementById('file-input')
                 };
-                this.els.input.addEventListener('input', () => this.generate());
+                this.els.ctx = this.els.canvas.getContext('2d');
+                
+                this.els.input.addEventListener('input', () => {
+                    if (this.state.frozen) this.state.frozen = false;
+                    this.generate();
+                });
                 this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
+                document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
+                
                 this.clearCanvas();
+                this.setLang('ua');
+            },
+
+            clearText() {
+                this.els.input.value = "";
+                this.clearCanvas();
+                this.updateStatus("Cleared");
+                AudioEngine.playClick();
             },
 
             toggleMenu() { this.els.menu.classList.toggle('open'); },
-            clearText() { this.els.input.value = ""; this.clearCanvas(); },
 
             generate() {
                 const text = this.els.input.value;
-                if (!text) return this.clearCanvas();
+                if (!text) { this.clearCanvas(); this.updateStatus("Waiting..."); return; }
 
                 try {
+                    const utf8Text = unescape(encodeURIComponent(text));
                     const qr = qrcode(0, 'M');
-                    qr.addData(unescape(encodeURIComponent(text)));
+                    qr.addData(utf8Text);
                     qr.make();
                     
-                    const count = qr.getModuleCount();
-                    const quiet = 4;
-                    const total = count + quiet * 2;
-                    const modSize = 1024 / total;
-
-                    // Генерация двух независимых мандал (рандом внутри функции)
-                    const gridR = this.build7x7Grid(total);
-                    const gridG = this.build7x7Grid(total);
-
+                    const moduleCount = qr.getModuleCount();
+                    const quietZone = 4;
+                    const totalModules = moduleCount + quietZone * 2;
+                    const modSize = 1024 / totalModules;
+                    
+                    // Generate Mandala Grids (Seed-Free Random)
+                    const gridR = this.build7x7Grid(totalModules);
+                    const gridG = this.build7x7Grid(totalModules);
+                    
                     const ctx = this.els.ctx;
                     ctx.globalCompositeOperation = "source-over";
-                    ctx.fillStyle = "#000";
+                    ctx.fillStyle = "#000000";
                     ctx.fillRect(0, 0, 1024, 1024);
 
                     ctx.globalCompositeOperation = "screen";
 
-                    // Канал RED
                     ctx.fillStyle = "#FF0000";
-                    this.drawGrid(ctx, gridR, total, modSize);
-
-                    // Канал GREEN
+                    this.drawGrid(ctx, gridR, totalModules, modSize);
+                    
                     ctx.fillStyle = "#00FF00";
-                    this.drawGrid(ctx, gridG, total, modSize);
+                    this.drawGrid(ctx, gridG, totalModules, modSize);
 
-                    // Канал BLUE (Данные QR)
                     ctx.fillStyle = "#0000FF";
-                    for (let r = 0; r < count; r++) {
-                        for (let c = 0; c < count; c++) {
+                    for (let r = 0; r < moduleCount; r++) {
+                        for (let c = 0; c < moduleCount; c++) {
                             if (qr.isDark(r, c)) {
-                                ctx.fillRect((c + quiet) * modSize, (r + quiet) * modSize, modSize, modSize);
+                                ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
                             }
                         }
                     }
-                    this.els.status.innerText = "Generated: Mandala Mode";
-                } catch (e) { console.error(e); }
+
+                    ctx.globalCompositeOperation = "source-over";
+                    this.updateStatus("Mandala Generated");
+                } catch (e) {
+                    console.error(e);
+                    this.updateStatus("Error");
+                }
             },
 
+            // --- NEW: build7x7Grid (Seed-Free Mandala Logic) ---
             build7x7Grid(size) {
                 const grid = Array(size).fill(0).map(() => Array(size).fill(0));
                 const center = Math.floor(size / 2);
                 
-                // Проход по октанту (1/8) для 8-лучевой симметрии
-                for (let y = 0; y <= center; y++) {
-                    for (let x = 0; x <= y; x++) {
+                // 1. Temporary Map for the Octant
+                const octantMap = new Map(); // Key: "x,y", Value: true
+                
+                // Calculate block bounds to cover the grid radius
+                // Radius approx size/2. Block count = ceil((size/2 + 3) / 7)
+                const maxBlocks = Math.ceil((size / 2 + 7) / 7); 
+
+                // 2. Iterate Blocks covering the positive quadrant (bx >= 0, by >= 0)
+                // We loop blocks in the octant region (bx >= by)
+                for (let by = 0; by < maxBlocks; by++) {
+                    for (let bx = by; bx < maxBlocks; bx++) {
                         
-                        // Чистый рандом для каждой точки октанта
+                        // RANDOM SPRITE (Seed-Free)
                         const patternIdx = Math.floor(Math.random() * SPRITE_LIB_7x7.length);
                         const pattern = SPRITE_LIB_7x7[patternIdx];
                         
-                        // Случайное отражение внутри блока для доп. хаоса
+                        // RANDOM TRANSFORMS (Flip X/Y)
                         const flipX = Math.random() > 0.5;
                         const flipY = Math.random() > 0.5;
-                        const localX = flipX ? (6 - (x % 7)) : (x % 7);
-                        const localY = flipY ? (6 - (y % 7)) : (y % 7);
 
-                        let val = 0;
-                        if ((pattern[localY] >> (6 - localX)) & 1) val = 255;
+                        // 3. Iterate Sprite Pixels
+                        for (let py = 0; py < 7; py++) {
+                            for (let px = 0; px < 7; px++) {
+                                
+                                // Apply flips to source coordinates
+                                let sX = flipX ? (6 - px) : px;
+                                let sY = flipY ? (6 - py) : py;
+                                
+                                // Check if pixel is ON
+                                if ((pattern[sY] >> (6 - sX)) & 1) {
+                                    
+                                    // Calculate Relative Coordinates (centered)
+                                    // Block (0,0) starts at relative (-3, -3)
+                                    // Block (bx, by) starts at (-3 + bx*7, -3 + by*7)
+                                    // We are iterating blocks in the positive octant indices.
+                                    let xRel = (bx * 7) + px - 3;
+                                    let yRel = (by * 7) + py - 3;
 
-                        // Отражение по 8 осям (Мандала)
-                        [[x,y],[y,x],[-x,y],[-y,x],[x,-y],[y,-x],[-x,-y],[-y,-x]].forEach(([px, py]) => {
-                            const gx = center + px, gy = center + py;
-                            if (gx >= 0 && gx < size && gy >= 0 && gy < size) grid[gy][gx] = val;
-                        });
+                                    // Constraint: Fill ONLY the Octant (x >= y >= 0)
+                                    // Since we loop blocks bx >= by, most pixels fall in x >= y.
+                                    // We explicitly check conditions.
+                                    if (xRel >= yRel && yRel >= 0) {
+                                        octantMap.set(`${xRel},${yRel}`, true);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
+                // 4. Apply 8-Fold Symmetry (Kaleidoscope)
+                octantMap.forEach((val, key) => {
+                    const [xStr, yStr] = key.split(',');
+                    const x = parseInt(xStr);
+                    const y = parseInt(yStr);
+                    
+                    // 8 symmetric points (D4 symmetry)
+                    const points = [
+                        [ x,  y], [ y,  x], [-x,  y], [-y,  x],
+                        [ x, -y], [ y, -x], [-x, -y], [-y, -x]
+                    ];
+
+                    points.forEach(([px, py]) => {
+                        const absX = center + px;
+                        const absY = center + py;
+                        
+                        if (absX >= 0 && absX < size && absY >= 0 && absY < size) {
+                            grid[absY][absX] = 1;
+                        }
+                    });
+                });
+
                 return grid;
             },
 
             drawGrid(ctx, grid, size, cellSize) {
                 for(let r=0; r<size; r++) {
                     for(let c=0; c<size; c++) {
-                        if(grid[r][c]) ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
+                        if(grid[r][c]) {
+                            ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
+                        }
                     }
                 }
             },
 
+            // --- SCANNER & RITUAL LOGIC ---
+
             startCamera() {
                 if(this.state.isScanning) return;
                 this.state.isScanning = true;
+                this.updateStatus("Accessing Camera...");
+
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(s => {
-                        this.els.video.srcObject = s;
+                    .then(stream => {
+                        this.els.video.srcObject = stream;
                         this.els.video.style.display = 'block';
                         this.els.video.play();
+                        this.updateStatus("Scanning...");
+                        AudioEngine.startScanAtmosphere();
                         this.scanLoop();
-                    });
+                    })
+                    .catch(err => { alert("Camera Error: " + err.message); this.stopCamera(); });
+            },
+
+            stopCamera() {
+                this.state.isScanning = false;
+                AudioEngine.stopAll();
+                if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
+                this.els.video.style.display = 'none';
+                this.els.scanLine.style.display = 'none';
             },
 
             scanLoop() {
                 if (!this.state.isScanning) return;
-                const v = this.els.video;
-                if (v.readyState === v.HAVE_ENOUGH_DATA) {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 1024; canvas.height = 1024;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(v, 0, 0, 1024, 1024);
-                    const img = ctx.getImageData(0,0,1024,1024);
-                    const code = jsQR(img.data, 1024, 1024);
-                    if (code) {
-                        this.els.input.value = code.data;
+                const video = this.els.video;
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const result = this.processFrame(video, video.videoWidth, video.videoHeight);
+                    if (result) {
+                        this.captureFrame(video, video.videoWidth, video.videoHeight);
                         this.stopCamera();
-                        this.generate();
+                        this.performRitual(result);
                         return;
                     }
                 }
                 requestAnimationFrame(() => this.scanLoop());
             },
 
-            stopCamera() {
-                this.state.isScanning = false;
-                if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
-                this.els.video.style.display = 'none';
+            processFrame(source, w, h) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024; canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; }
+                else { sh = w; sy = (h - sh) / 2; }
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
+                const imageData = ctx.getImageData(0, 0, 1024, 1024);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const b = data[i+2];
+                    data[i] = b; data[i+1] = b; data[i+2] = b;
+                }
+                return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+            },
+
+            captureFrame(source, w, h) {
+                const ctx = this.els.ctx;
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
+                else { sh = w; sy = (h - sh) / 2; }
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
+            },
+
+            performRitual(code) {
+                this.state.isScanning = true;
+                AudioEngine.playScan();
+                
+                const line = this.els.scanLine;
+                line.style.display = 'block';
+                line.style.animation = 'pulse 1.5s infinite';
+                line.style.top = '0%';
+                line.style.transition = 'none';
+                void line.offsetHeight;
+                line.style.transition = 'top 2.5s linear';
+                line.style.top = '100%';
+                this.updateStatus("Analyzing...");
+
+                setTimeout(() => {
+                    this.els.flash.style.opacity = '1';
+                    AudioEngine.playResult(!!code);
+                    setTimeout(() => {
+                        this.els.flash.style.opacity = '0';
+                        line.style.animation = 'none';
+                        if (code) {
+                            try { this.els.input.value = decodeURIComponent(escape(code.data)); } catch(e) { this.els.input.value = code.data; }
+                            this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
+                            this.els.ctx.fillRect(0, 0, 1024, 1024);
+                            this.updateStatus("Decoded!");
+                            this.state.frozen = true;
+                        } else {
+                            this.updateStatus("No Data Found");
+                            this.clearCanvas();
+                        }
+                        this.state.isScanning = false;
+                        line.style.display = 'none';
+                    }, 150);
+                }, 2500);
+            },
+
+            handleFile(e) {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.captureFrame(img, img.width, img.height);
+                        const result = this.processFrame(img, img.width, img.height);
+                        this.state.isScanning = true;
+                        AudioEngine.playScan();
+                        this.performRitual(result);
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            },
+
+            // --- UTILS ---
+            clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
+            updateStatus(msg) { this.els.status.innerText = msg; },
+            
+            setLang(lang) {
+                this.state.lang = lang;
+                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
+                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
+                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
+                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
+                
+                const i18n = {
+                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
+                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
+                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
+                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах.", en: "Color 2D codes expand classic QR (Denso Wave, 1994) by distributing data across channels." },
+                    m_author: { ua: "🎨 Автор", en: "🎨 Author" },
+                    m_author_text: { ua: "Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).", en: "Mykhailo Kashkarov — science-art artist (optics, spectral design)." },
+                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" },
+                    m_contacts: { ua: "📩 Контакти", en: "📩 Contacts" }
+                };
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(i18n[key]) el.textContent = i18n[key][lang];
+                });
             },
 
             save() {
-                const a = document.createElement('a');
-                a.download = 'mandala-qr.png';
-                a.href = this.els.canvas.toDataURL();
-                a.click();
-            },
-
-            clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); }
+                const link = document.createElement('a');
+                link.download = 'qrnament-mandala.png';
+                link.href = this.els.canvas.toDataURL();
+                link.click();
+            }
         };
 
+        // --- AUDIO ENGINE v4.5 (Fixed) ---
+        const AudioEngine = {
+            ctx: null, scanNodes: [], initialized: false,
+            init() {
+                if(this.initialized) return;
+                try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.initialized = true; } catch(e) {}
+            },
+            playClick() {
+                this.init(); if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine'; osc.frequency.value = 1200;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.05);
+            },
+            playScan() {
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 2.5);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.05, now + 0.2);
+                gain.gain.setValueAtTime(0.05, now + 2.0);
+                gain.gain.linearRampToValueAtTime(0, now + 2.5);
+
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 2.6);
+            },
+            startScanAtmosphere() {
+                this.init(); this.stopAll();
+                const drone = this.ctx.createOscillator();
+                drone.type = 'sine'; drone.frequency.value = 40;
+                const droneGain = this.ctx.createGain(); droneGain.gain.value = 0.10;
+                drone.connect(droneGain); droneGain.connect(this.ctx.destination); drone.start();
+                this.scanNodes.push(drone);
+
+                const beep = this.ctx.createOscillator();
+                beep.type = 'sine'; beep.frequency.value = 880;
+                const beepGain = this.ctx.createGain(); beepGain.gain.value = 0.02;
+                beep.connect(beepGain); beepGain.connect(this.ctx.destination); beep.start();
+                this.scanNodes.push(beep);
+
+                const toggle = () => {
+                    if(!this.scanNodes.includes(beep)) return;
+                    const now = this.ctx.currentTime;
+                    beepGain.gain.setValueAtTime(beepGain.gain.value, now);
+                    beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.01 ? 0.001 : 0.02, now + 0.2);
+                };
+                this.beepInterval = setInterval(toggle, 400);
+            },
+            stopAll() { if(this.beepInterval) clearInterval(this.beepInterval); this.scanNodes.forEach(n => { try { n.stop(); } catch(e) {} }); this.scanNodes = []; },
+            playResult(success) {
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                if(success) {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(2500, now);
+                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.3);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                } else {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                }
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+        };
+
+        // Initialize App
         document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
