@@ -3,158 +3,631 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>▣ QRGB ULTRA - Pro Engine v4.2</title>
+    <title>QRnament v3.3 // Layers & Density</title>
+    
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <style>
-        body { background: #000; color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
-        canvas { image-rendering: pixelated; }
-        textarea { background: #0a0a0a; border: 1px solid #333; color: #fff; font-family: monospace; }
-        
-        /* Логотип */
-        .logo-q { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.6); }
-        .logo-r { color: #FF004D; text-shadow: 0 0 10px #FF004D; }
-        .logo-g { color: #00FF41; text-shadow: 0 0 10px #00FF41; }
-        .logo-b { color: #0088FF; text-shadow: 0 0 10px #0088FF; }
 
-        /* Анимация сканирования */
-        .scan-line { 
-            position:absolute; left:0; right:0; height:3px; 
-            background:linear-gradient(90deg,transparent,#00ff41,transparent); 
-            box-shadow:0 0 20px #00ff41; 
-            top: 0; 
-            z-index: 10;
+    <style>
+        :root {
+            --neon-green: #00ff41;
+            --neon-red: #ff004d;
+            --neon-blue: #0088ff;
+            --glass-bg: rgba(0, 255, 65, 0.05);
+        }
+
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            overflow-x: hidden; 
+        }
+
+        /* Logo Colors */
+        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
+        .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
+
+        /* Canvas & Video */
+        #canvas {
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            image-rendering: pixelated;
+        }
+
+        #video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            transform: scaleX(-1);
             display: none;
         }
-        .scan-active .scan-line {
-            display: block;
-            animation: scanLine 2.5s linear forwards;
+
+        /* Scan FX */
+        .scan-line { 
+            position: absolute; 
+            left: 0; right: 0; 
+            height: 4px; 
+            background: var(--neon-green); 
+            box-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green); 
+            top: 0; 
+            z-index: 20; 
+            pointer-events: none;
+            display: none;
         }
-        @keyframes scanLine { 
-            0%{top:0%;} 
-            100%{top:100%;} 
+
+        @keyframes pulse {
+            0% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
+            50% { opacity: 1; box-shadow: 0 0 40px var(--neon-green), 0 0 10px #fff; height: 6px; }
+            100% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
+        }
+
+        /* Flash Effect */
+        .flash-overlay {
+            position: absolute; 
+            inset: 0; 
+            background: white; 
+            opacity: 0; 
+            pointer-events: none; 
+            z-index: 30;
+            transition: opacity 0.1s;
+        }
+
+        /* Menu Overlay */
+        .menu-overlay {
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.98);
+            z-index: 100; 
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; 
+            flex-direction: column; 
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .menu-overlay.open { transform: translateX(0); }
+
+        /* UI */
+        .btn-active:active { transform: scale(0.96); }
+
+        .neon-btn-green {
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
+            text-shadow: 0 0 5px var(--neon-green);
+            transition: all 0.2s;
+        }
+
+        .neon-btn-green:hover {
+            box-shadow: 0 0 20px var(--neon-green), inset 0 0 30px rgba(0, 255, 65, 0.1);
         }
         
-        @keyframes flash { 0%,100%{opacity:0} 50%{opacity:.9} }
-        .flash { animation:flash .3s; }
-        
-        .indicator { width: 12px; height: 12px; border-radius: 50%; background: #222; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; }
-        .active-r { background: #ff004d; box-shadow: 0 0 10px #ff004d; }
-        .active-g { background: #00ff41; box-shadow: 0 0 10px #00ff41; }
-        .active-b { background: #0088ff; box-shadow: 0 0 10px #0088ff; }
-        
-        /* Видео и Картинки */
-        #video { object-fit: cover; }
-        
-        /* Меню */
-        .dropdown-menu {
-            transform: translateY(-10px);
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
+        .neon-btn-ghost {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
         }
-        .dropdown-menu.show {
-            transform: translateY(0);
-            opacity: 1;
-            visibility: visible;
+        .neon-btn-ghost:hover {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
         }
+
+        .neon-text-glow {
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+            transition: all 0.3s;
+        }
+
+        .neon-text-glow:focus {
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+            border-color: #fff;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-green); }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-6">
+<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6 relative">
-        <canvas id="mini-qr" width="44" height="44" class="rounded bg-zinc-900 border border-white/10"></canvas>
+    <!-- Menu Overlay -->
+    <div id="menu-overlay" class="menu-overlay">
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex gap-2 bg-zinc-800 p-1 rounded-lg border border-white/10">
+                <button onclick="App.setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
+                <button onclick="App.setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
+            </div>
+            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-neonGreen">&times;</button>
+        </div>
         
-        <!-- Логотип QRGB -->
-        <h1 class="text-xl font-extrabold tracking-widest uppercase text-center flex-1 flex justify-center gap-0.5">
-            <span class="logo-q">Q</span><span class="logo-r">R</span><span class="logo-g">G</span><span class="logo-b">B</span>
+        <div class="space-y-6 text-sm">
+            <div>
+                <h2 class="text-xl font-black mb-2 flex items-center gap-2">
+                    <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+                </h2>
+                <p class="text-neonGreen opacity-70">v3.3 // Layers & Density</p>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_tech">Технологія</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_tech_text">Фрактальне наслоювання модулів 7x7. Layers (L) відповідають за глибину, Density (D) — за деталізацію текстури.</p>
+            </div>
+        </div>
+    </div>
+
+    <header class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-black tracking-tighter uppercase">
+            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
         </h1>
+        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors neon-border-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+    </header>
+
+    <!-- Controls -->
+    <div class="mb-4 relative flex gap-2">
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow" placeholder="Type to generate..."></textarea>
+        <button onclick="App.generate()" class="bg-black text-white font-black px-4 rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Gen</button>
+    </div>
+
+    <!-- NEW UI: Layers & Density Controls -->
+    <div class="mb-4 grid grid-cols-2 gap-3">
+        <!-- Layers Control -->
+        <div class="flex flex-col items-center justify-between bg-zinc-900 p-3 rounded-2xl border border-white/5">
+            <span class="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Layers (L)</span>
+            <div class="flex items-center gap-3">
+                <button onclick="App.changeParam('layers', -1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">−</button>
+                <span id="val-layers" class="text-2xl font-black text-neonGreen w-6 text-center">2</span>
+                <button onclick="App.changeParam('layers', 1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">+</button>
+            </div>
+        </div>
         
-        <button id="menu-btn" class="w-10 text-white text-xl active:scale-90 transition-transform z-50">☰</button>
-        
-        <!-- Выпадающее меню -->
-        <div id="dropdown" class="dropdown-menu absolute top-full right-0 mt-2 w-56 bg-zinc-900 rounded-xl border border-white/10 shadow-2xl z-50 overflow-hidden">
-            <a href="#" class="block px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-white/5">Як користуватися</a>
-            <a href="#" class="block px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-white/5">Технологія</a>
-            <a href="#" class="block px-4 py-3 text-xs text-zinc-300 hover:bg-zinc-800 border-b border-white/5">Автор і контакти</a>
-            <button onclick="globalReset()" class="w-full text-left px-4 py-3 text-xs text-red-400 hover:bg-zinc-800 font-bold uppercase tracking-wide">Reset / Очистити всё</button>
+        <!-- Density Control -->
+        <div class="flex flex-col items-center justify-between bg-zinc-900 p-3 rounded-2xl border border-white/5">
+            <span class="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Density (D)</span>
+            <div class="flex items-center gap-3">
+                <button onclick="App.changeParam('density', -1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">−</button>
+                <span id="val-density" class="text-2xl font-black text-neonGreen w-6 text-center">2</span>
+                <button onclick="App.changeParam('density', 1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">+</button>
+            </div>
         </div>
     </div>
 
-    <!-- Inputs -->
-    <div class="space-y-3 mb-6">
-        <textarea id="r-text" class="w-full p-4 rounded-xl border-l-4 border-red-600 outline-none h-14 text-sm" placeholder="RED CHANNEL..."></textarea>
-        <textarea id="g-text" class="w-full p-4 rounded-xl border-l-4 border-green-600 outline-none h-14 text-sm" placeholder="GREEN CHANNEL..."></textarea>
-        <textarea id="b-text" class="w-full p-4 rounded-xl border-l-4 border-blue-600 outline-none h-14 text-sm" placeholder="BLUE (PRIORITY)..."></textarea>
-    </div>
-
-    <!-- QR Display -->
-    <div class="flex-1 flex items-center justify-center mb-10">
-        <div class="relative w-72 h-72 bg-zinc-950 rounded-[2rem] p-5 border border-white/5 shadow-2xl">
-            <canvas id="qr-main" width="512" height="512" class="w-full h-full opacity-0 transition-opacity duration-500"></canvas>
-        </div>
+    <!-- Display Container -->
+    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
+        <canvas id="canvas" width="1024" height="1024"></canvas>
+        <video id="video" playsinline></video>
+        <div id="scan-line" class="scan-line"></div>
+        <div id="flash-layer" class="flash-overlay"></div>
     </div>
 
     <!-- Actions -->
-    <div class="space-y-3 pb-4">
-        <button id="save-btn" onclick="saveQR()" class="w-full py-4 bg-white text-black font-black rounded-2xl hidden active:scale-95 text-xs tracking-widest uppercase">Save Result</button>
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="startScannerUI()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 active:scale-95 text-[10px] uppercase tracking-widest">Open Camera</button>
-            <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFile(event)">
-            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-zinc-900 text-white font-bold rounded-2xl border border-white/10 active:scale-95 text-[10px] uppercase tracking-widest">Open Gallery</button>
-        </div>
-    </div>
-
-    <!-- Scanner UI -->
-    <div id="scanner-ui" class="fixed inset-0 z-[100] bg-black hidden flex flex-col p-6">
-        <div class="flex justify-between items-center mb-6">
-            <span class="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Spectral Analysis</span>
-            <button onclick="closeScanner()" class="text-white bg-zinc-800 px-6 py-2 rounded-xl text-[10px] font-black">CLOSE</button>
-        </div>
+    <div class="flex flex-col gap-3">
+        <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
         
-        <div id="scan-container" class="relative w-full aspect-square bg-zinc-950 rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center">
-            <video id="video" class="absolute inset-0 w-full h-full object-cover" playsinline></video>
-            <canvas id="freeze-frame" class="absolute inset-0 w-full h-full object-cover hidden z-10"></canvas>
-            <div class="scan-line"></div>
-            <div id="flash-layer" class="absolute inset-0 bg-white opacity-0 pointer-events-none z-50"></div>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
+            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
         </div>
-
-        <div class="mt-8 space-y-3">
-            <!-- Блоки результатов (инициально скрыты или ждут) -->
-            <div id="res-r" class="p-4 bg-zinc-900/60 rounded-2xl flex items-center gap-4 border border-white/5 opacity-50">
-                <div class="indicator"></div>
-                <span class="text-[10px] text-zinc-500 uppercase tracking-tighter">R: Waiting...</span>
-            </div>
-            <div id="res-g" class="p-4 bg-zinc-900/60 rounded-2xl flex items-center gap-4 border border-white/5 opacity-50">
-                <div class="indicator"></div>
-                <span class="text-[10px] text-zinc-500 uppercase tracking-tighter">G: Waiting...</span>
-            </div>
-            <div id="res-b" class="p-4 bg-zinc-900/60 rounded-2xl flex items-center gap-4 border border-blue-500/20 opacity-50">
-                <div class="indicator"></div>
-                <span class="text-[10px] text-zinc-400 uppercase tracking-tighter">B: Priority Ready</span>
-            </div>
-            
-            <!-- Кнопка Reset при ошибке -->
-            <button id="fail-reset-btn" onclick="resetScannerState()" class="w-full py-4 bg-red-900/50 text-red-400 font-bold rounded-2xl border border-red-500/30 text-xs tracking-widest uppercase hidden">
-                Reset / Спробувати ще
-            </button>
-        </div>
+        <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
+
+    <p id="status" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Ready</p>
 
     <script>
-        // --- AUDIO ENGINE ---
+        // --- 1. SPRITE LIBRARY 7x7 (60 Modules) ---
+        const SPRITE_LIB_7x7 = [
+            [73,42,28,127,28,42,73], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
+            [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [0,62,34,42,46,32,63],
+            [15,1,29,5,52,16,64], [64,96,112,120,112,96,64], [76,102,51,25,51,102,76],
+            [119,69,117,0,87,81,119], [119,85,119,0,119,85,119], [119,65,93,20,93,65,119],
+            [62,73,93,127,93,73,62], [42,107,8,119,8,107,42], [8,42,8,119,8,42,8],
+            [28,8,65,99,65,8,28], [54,99,73,20,73,99,54], [63,31,15,7,3,1,0],
+            [127,63,31,15,7,3,1], [127,31,31,7,7,1,1], [119,17,93,68,119,17,89],
+            [119,21,87,80,127,17,89], [119,85,127,20,127,85,119], [87,80,87,0,117,5,117],
+            [95,80,87,65,117,5,125], [30,80,87,65,117,5,60], [91,80,11,93,104,5,109],
+            [42,99,8,93,8,99,42], [99,99,0,0,0,99,99], [99,99,99,99,99,99,99],
+            [119,93,99,34,99,93,119], [54,85,99,8,99,85,54], [91,73,109,36,54,18,91],
+            [127,8,107,34,107,8,127], [42,34,42,8,42,34,42], [56,43,9,127,72,106,14],
+            [60,72,81,99,69,9,30], [12,56,33,107,66,14,24], [32,126,34,34,34,63,2],
+            [100,94,51,42,102,61,19], [6,92,118,34,55,29,48], [28,62,119,99,119,62,28],
+            [62,99,73,93,73,99,62], [126,67,89,85,77,97,63], [54,85,107,28,107,85,54],
+            [127,119,99,73,99,119,127], [12,22,51,113,14,76,104], [107,73,8,127,8,73,107],
+            [0,62,34,42,58,2,126], [85,21,117,5,125,1,127], [52,102,71,85,71,102,52],
+            [8,8,42,34,54,20,93], [119,99,107,8,107,99,119], [62,34,107,8,107,34,62],
+            [73,62,34,107,34,62,73], [123,123,96,107,3,111,111], [91,27,96,107,3,108,109],
+            [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
+        ];
+
+        // --- 2. APP MODULE ---
+        const App = {
+            state: {
+                lang: 'ua',
+                frozen: false,
+                isScanning: false,
+                layers: 2,   // Default L
+                density: 2   // Default D
+            },
+
+            els: {},
+
+            init() {
+                this.els = {
+                    canvas: document.getElementById('canvas'),
+                    video: document.getElementById('video'),
+                    input: document.getElementById('main-input'),
+                    status: document.getElementById('status'),
+                    scanLine: document.getElementById('scan-line'),
+                    flash: document.getElementById('flash-layer'),
+                    menu: document.getElementById('menu-overlay'),
+                    fileInput: document.getElementById('file-input'),
+                    valLayers: document.getElementById('val-layers'),
+                    valDensity: document.getElementById('val-density')
+                };
+                
+                this.els.ctx = this.els.canvas.getContext('2d');
+                
+                this.els.input.addEventListener('input', () => {
+                    if (this.state.frozen) this.state.frozen = false;
+                    this.generate();
+                });
+                
+                this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
+                
+                // Init Audio on first user interaction
+                document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
+                
+                this.clearCanvas();
+                this.setLang('ua');
+            },
+
+            changeParam(type, delta) {
+                if (type === 'layers') {
+                    let val = this.state.layers + delta;
+                    if (val < 1) val = 1;
+                    if (val > 10) val = 10;
+                    if (val !== this.state.layers) {
+                        this.state.layers = val;
+                        this.els.valLayers.innerText = val;
+                        AudioEngine.playClick();
+                        this.generate();
+                    }
+                } else if (type === 'density') {
+                    let val = this.state.density + delta;
+                    if (val < 1) val = 1;
+                    if (val > 5) val = 5;
+                    if (val !== this.state.density) {
+                        this.state.density = val;
+                        this.els.valDensity.innerText = val;
+                        AudioEngine.playClick();
+                        this.generate();
+                    }
+                }
+            },
+
+            getTextSeed(text) {
+                let seed = 0;
+                for (let i = 0; i < text.length; i++) seed += text.charCodeAt(i);
+                return seed || 1;
+            },
+
+            generate() {
+                const text = this.els.input.value;
+                if (!text) {
+                    this.clearCanvas();
+                    this.updateStatus("Waiting for input...");
+                    return;
+                }
+
+                // Trigger Scan Sound for generation
+                AudioEngine.playScan();
+
+                try {
+                    const utf8Text = unescape(encodeURIComponent(text));
+                    const qr = qrcode(0, 'M');
+                    qr.addData(utf8Text);
+                    qr.make();
+                    
+                    const moduleCount = qr.getModuleCount();
+                    const quietZone = 4;
+                    const totalModules = moduleCount + quietZone * 2;
+                    const modSize = 1024 / totalModules;
+                    
+                    const baseSeed = this.getTextSeed(text);
+                    const L = this.state.layers;
+                    const D = this.state.density;
+
+                    // Generate Density Grids
+                    // Red uses baseSeed
+                    const gridR = this.buildDensityGrid(totalModules, baseSeed, L, D);
+                    // Green uses baseSeed + 500 (different patterns)
+                    const gridG = this.buildDensityGrid(totalModules, baseSeed + 500, L, D);
+                    
+                    // Render
+                    const ctx = this.els.ctx;
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.fillStyle = "#000000";
+                    ctx.fillRect(0, 0, 1024, 1024);
+
+                    ctx.globalCompositeOperation = "screen";
+
+                    ctx.fillStyle = "#FF0000";
+                    this.drawDensityGrid(ctx, gridR, totalModules, modSize, 'red');
+                    
+                    ctx.fillStyle = "#00FF00";
+                    this.drawDensityGrid(ctx, gridG, totalModules, modSize, 'green');
+
+                    // Blue QR
+                    ctx.fillStyle = "#0000FF";
+                    for (let r = 0; r < moduleCount; r++) {
+                        for (let c = 0; c < moduleCount; c++) {
+                            if (qr.isDark(r, c)) {
+                                ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
+                            }
+                        }
+                    }
+
+                    ctx.globalCompositeOperation = "source-over";
+                    this.updateStatus(`L:${L} D:${D} | Seed: ${baseSeed}`);
+
+                } catch (e) {
+                    console.error(e);
+                    this.updateStatus("Error");
+                }
+            },
+
+            buildDensityGrid(size, seed, layers, density) {
+                const grid = Array(size).fill(0).map(() => Array(size).fill(0));
+                const center = Math.floor(size / 2);
+                
+                // Iterate Octant
+                for (let y = 0; y <= center; y++) {
+                    for (let x = 0; x <= y; x++) {
+                        
+                        let val = 0;
+                        
+                        // Determine Tile Coordinates (7x7 tiling)
+                        // Offset 3 to center the pattern
+                        const tileX = Math.floor((x + 3) / 7);
+                        const tileY = Math.floor((y + 3) / 7);
+                        const localX = (x + 3) % 7;
+                        const localY = (y + 3) % 7;
+
+                        // Nested Loop: Layers -> Density
+                        for (let l = 0; l < layers; l++) {
+                            for (let d = 0; d < density; d++) {
+                                // Dynamic Pattern Index
+                                const patternIdx = (seed + l * 13 + d + tileX * 17 + tileY * 11) % SPRITE_LIB_7x7.length;
+                                const pattern = SPRITE_LIB_7x7[patternIdx];
+                                
+                                // Check bit
+                                if ((pattern[localY] >> (6 - localX)) & 1) {
+                                    // Brightness decay by Layer (Golden Ratio) normalized by Density
+                                    val += (158 * Math.pow(0.618, l)) / density;
+                                }
+                            }
+                        }
+
+                        // Mirror to 8 points
+                        const points = [
+                            [x, y], [y, x], [-x, y], [-y, x],
+                            [x, -y], [y, -x], [-x, -y], [-y, -x]
+                        ];
+
+                        points.forEach(([px, py]) => {
+                            const gx = center + px;
+                            const gy = center + py;
+                            if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
+                                grid[gy][gx] = Math.min(255, val);
+                            }
+                        });
+                    }
+                }
+                return grid;
+            },
+
+            drawDensityGrid(ctx, grid, size, cellSize, colorChannel) {
+                for(let r=0; r<size; r++) {
+                    for(let c=0; c<size; c++) {
+                        const val = grid[r][c];
+                        if(val > 0) {
+                            ctx.fillStyle = `rgba(${colorChannel==='red'?val:0}, ${colorChannel==='green'?val:0}, 0, 1.0)`;
+                            ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
+                        }
+                    }
+                }
+            },
+
+            // --- SCANNER & RITUAL LOGIC ---
+
+            startCamera() {
+                if(this.state.isScanning) return;
+                this.state.isScanning = true;
+                this.updateStatus("Accessing Camera...");
+
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(stream => {
+                        this.els.video.srcObject = stream;
+                        this.els.video.style.display = 'block';
+                        this.els.video.play();
+                        this.updateStatus("Scanning...");
+                        AudioEngine.startScanAtmosphere();
+                        this.scanLoop();
+                    })
+                    .catch(err => {
+                        alert("Camera Error: " + err.message);
+                        this.stopCamera();
+                    });
+            },
+
+            stopCamera() {
+                this.state.isScanning = false;
+                AudioEngine.stopAll();
+                if(this.els.video.srcObject) {
+                    this.els.video.srcObject.getTracks().forEach(t => t.stop());
+                }
+                this.els.video.style.display = 'none';
+                this.els.scanLine.style.display = 'none';
+            },
+
+            scanLoop() {
+                if (!this.state.isScanning) return;
+                const video = this.els.video;
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const result = this.processFrame(video, video.videoWidth, video.videoHeight);
+                    if (result) {
+                        this.captureFrame(video, video.videoWidth, video.videoHeight);
+                        this.stopCamera();
+                        this.performRitual(result);
+                        return;
+                    }
+                }
+                requestAnimationFrame(() => this.scanLoop());
+            },
+
+            processFrame(source, w, h) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024;
+                canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; }
+                else { sh = w; sy = (h - sh) / 2; }
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
+                const imageData = ctx.getImageData(0, 0, 1024, 1024);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const b = data[i+2];
+                    data[i] = b; data[i+1] = b; data[i+2] = b;
+                }
+                return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+            },
+
+            captureFrame(source, w, h) {
+                const ctx = this.els.ctx;
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
+                else { sh = w; sy = (h - sh) / 2; }
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
+            },
+
+            performRitual(code) {
+                this.state.isScanning = true;
+                AudioEngine.startScanAtmosphere(); // Background drone
+                
+                const line = this.els.scanLine;
+                line.style.display = 'block';
+                line.style.animation = 'pulse 1.5s infinite';
+                line.style.top = '0%';
+                line.style.transition = 'none';
+                void line.offsetHeight;
+                line.style.transition = 'top 2.5s linear';
+                line.style.top = '100%';
+                this.updateStatus("Analyzing...");
+
+                setTimeout(() => {
+                    this.els.flash.style.opacity = '1';
+                    
+                    // Play result sound at the exact moment of flash
+                    AudioEngine.playResult(!!code);
+                    
+                    setTimeout(() => {
+                        this.els.flash.style.opacity = '0';
+                        line.style.animation = 'none';
+                        if (code) {
+                            try { this.els.input.value = decodeURIComponent(escape(code.data)); } catch(e) { this.els.input.value = code.data; }
+                            this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
+                            this.els.ctx.fillRect(0, 0, 1024, 1024);
+                            this.updateStatus("Decoded!");
+                            this.state.frozen = true;
+                        } else {
+                            this.updateStatus("No Data Found");
+                            this.clearCanvas();
+                        }
+                        this.state.isScanning = false;
+                        line.style.display = 'none';
+                    }, 150);
+                }, 2500);
+            },
+
+            handleFile(e) {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.captureFrame(img, img.width, img.height);
+                        const result = this.processFrame(img, img.width, img.height);
+                        this.state.isScanning = true;
+                        AudioEngine.startScanAtmosphere();
+                        this.performRitual(result);
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            },
+
+            // --- UTILS ---
+            
+            clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
+            updateStatus(msg) { this.els.status.innerText = msg; },
+            toggleMenu() { this.els.menu.classList.toggle('open'); },
+            
+            setLang(lang) {
+                this.state.lang = lang;
+                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
+                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
+                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
+                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
+            },
+
+            save() {
+                const link = document.createElement('a');
+                link.download = 'qrnament-v3.3.png';
+                link.href = this.els.canvas.toDataURL();
+                link.click();
+            }
+        };
+
+        // --- AUDIO ENGINE MODULE (Refactored) ---
         const AudioEngine = {
             ctx: null,
+            scanNodes: [],
             initialized: false,
-            
+
             init() {
                 if(this.initialized) return;
                 try {
                     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                     this.initialized = true;
-                } catch(e) { console.error("Web Audio API not supported"); }
+                } catch(e) {}
+            },
+
+            playClick() {
+                this.init();
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = 1200;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
             },
 
             playScan() {
@@ -162,420 +635,94 @@
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-
+                
                 osc.type = 'sine';
-                // Sweep 200Hz -> 1200Hz
+                // Frequency: 200Hz -> 1200Hz over 2.5s
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.exponentialRampToValueAtTime(1200, now + 2.5);
-
-                // Fade In/Out
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.05, now + 0.5); // Fade in
-                gain.gain.setValueAtTime(0.05, now + 2.0); // Hold
-                gain.gain.linearRampToValueAtTime(0, now + 2.5); // Fade out
-
+                
+                // Volume: Attack and Release
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.08, now + 0.5); // Soft attack
+                gain.gain.setValueAtTime(0.08, now + 2.0);
+                gain.gain.linearRampToValueAtTime(0.001, now + 2.5); // Release
+                
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
                 osc.stop(now + 2.6);
             },
 
+            startScanAtmosphere() {
+                this.init();
+                this.stopAll();
+
+                const drone = this.ctx.createOscillator();
+                drone.type = 'sine';
+                drone.frequency.value = 40;
+                const droneGain = this.ctx.createGain();
+                droneGain.gain.value = 0.10; // Quieter
+                drone.connect(droneGain);
+                droneGain.connect(this.ctx.destination);
+                drone.start();
+                this.scanNodes.push(drone);
+
+                const beep = this.ctx.createOscillator();
+                beep.type = 'square';
+                beep.frequency.value = 880;
+                const beepGain = this.ctx.createGain();
+                beepGain.gain.value = 0.03; // Very quiet
+                beep.connect(beepGain);
+                beepGain.connect(this.ctx.destination);
+                beep.start();
+                this.scanNodes.push(beep);
+
+                const toggle = () => {
+                    if(!this.scanNodes.includes(beep)) return;
+                    const now = this.ctx.currentTime;
+                    beepGain.gain.setValueAtTime(beepGain.gain.value, now);
+                    beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.02 ? 0.001 : 0.05, now + 0.1);
+                };
+                this.beepInterval = setInterval(toggle, 250);
+            },
+
+            stopAll() {
+                if(this.beepInterval) clearInterval(this.beepInterval);
+                this.scanNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+                this.scanNodes = [];
+            },
+
             playResult(success) {
                 if(!this.ctx) return;
                 const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
                 
+                gain.gain.setValueAtTime(0.1, now);
+
                 if(success) {
-                    // Digital Blip
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
+                    // High clean tone
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(2500, now);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.2);
+                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.3);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
                 } else {
-                    // Error Double Pulse
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
+                    // Low anxious tone
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.setValueAtTime(100, now + 0.15);
-                    
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.setValueAtTime(0, now + 0.15);
-                    gain.gain.setValueAtTime(0.1, now + 0.2);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-                    
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.4);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.5);
                 }
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.6);
             }
         };
 
-        // Init Audio on first interaction
-        document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
-
-        // --- ELEMENTS & STATE ---
-        const els = {
-            r: document.getElementById('r-text'),
-            g: document.getElementById('g-text'),
-            b: document.getElementById('b-text'),
-            main: document.getElementById('qr-main'),
-            mini: document.getElementById('mini-qr'),
-            video: document.getElementById('video'),
-            freeze: document.getElementById('freeze-frame'),
-            scanContainer: document.getElementById('scan-container'),
-            flash: document.getElementById('flash-layer'),
-            failBtn: document.getElementById('fail-reset-btn'),
-            resR: document.getElementById('res-r'),
-            resG: document.getElementById('res-g'),
-            resB: document.getElementById('res-b')
-        };
-
-        let scanning = false;
-        let results = {r:null, g:null, b:null};
-        let scanStartTime = 0;
-        let analysisReady = false; // Flag if analysis finished before animation
-
-        // --- MENU LOGIC ---
-        document.getElementById('menu-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('dropdown').classList.toggle('show');
-        });
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#dropdown') && !e.target.closest('#menu-btn')) {
-                document.getElementById('dropdown').classList.remove('show');
-            }
-        });
-
-        function globalReset() {
-            // Close scanner if open
-            closeScanner();
-            
-            // Clear inputs
-            els.r.value = ""; els.g.value = ""; els.b.value = "";
-            
-            // Clear QR
-            els.main.style.opacity = 0;
-            document.getElementById('save-btn').classList.add('hidden');
-            const mCtx = els.mini.getContext('2d');
-            mCtx.fillStyle = "#000"; mCtx.fillRect(0,0,44,44);
-            
-            document.getElementById('dropdown').classList.remove('show');
-        }
-
-        // --- QR Generation with UTF-8 ---
-        function generateQR() {
-            const texts = [els.r.value, els.g.value, els.b.value];
-            if (!texts.some(t => t.trim())) {
-                els.main.style.opacity = 0;
-                document.getElementById('save-btn').classList.add('hidden');
-                return;
-            }
-            
-            let maxVer = 1;
-            texts.forEach(t => {
-                if(!t.trim()) return;
-                const tmp = qrcode(0, 'M'); 
-                tmp.addData(unescape(encodeURIComponent(t || " ")));
-                tmp.make();
-                const v = Math.floor((tmp.getModuleCount() - 17) / 4);
-                if (v > maxVer) maxVer = v;
-            });
-            
-            const ctx = els.main.getContext('2d');
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,512,512);
-            ctx.globalCompositeOperation = "lighten";
-            
-            texts.forEach((text, i) => {
-                if(!text.trim()) return;
-                const qr = qrcode(maxVer, 'M'); 
-                qr.addData(unescape(encodeURIComponent(text)));
-                qr.make();
-                const mod = 512 / qr.getModuleCount();
-                ctx.fillStyle = i === 0 ? "#FF0000" : (i === 1 ? "#00FF00" : "#0000FF");
-                for (let r = 0; r < qr.getModuleCount(); r++) {
-                    for (let c = 0; c < qr.getModuleCount(); c++) {
-                        if (qr.isDark(r, c)) ctx.fillRect(c * mod, r * mod, mod, mod);
-                    }
-                }
-            });
-            
-            ctx.globalCompositeOperation = "source-over";
-            els.main.style.opacity = 1;
-            document.getElementById('save-btn').classList.remove('hidden');
-            els.mini.getContext('2d').drawImage(els.main, 0, 0, 44, 44);
-        }
-        [els.r, els.g, els.b].forEach(el => el.addEventListener('input', generateQR));
-
-        // --- SCANNER LOGIC ---
-        
-        function resetScannerState() {
-            results = {r:null, g:null, b:null};
-            analysisReady = false;
-            
-            // Reset UI
-            els.failBtn.classList.add('hidden');
-            els.freeze.classList.add('hidden');
-            els.video.classList.remove('hidden');
-            els.scanContainer.classList.remove('scan-active');
-            
-            // Reset Indicators
-            ['r', 'g', 'b'].forEach(ch => {
-                const el = els['res' + ch.toUpperCase()];
-                el.querySelector('span').textContent = ch.toUpperCase() + ': Waiting...';
-                el.querySelector('.indicator').className = 'indicator';
-                el.classList.remove('hidden'); // Show again if hidden
-                el.style.opacity = 0.5;
-            });
-            
-            startCamera(); // Restart camera stream
-        }
-
-        function startScannerUI() {
-            const ui = document.getElementById('scanner-ui');
-            ui.classList.remove('hidden');
-            resetScannerState();
-        }
-
-        function closeScanner() {
-            scanning = false;
-            if (els.video.srcObject) els.video.srcObject.getTracks().forEach(t => t.stop());
-            document.getElementById('scanner-ui').classList.add('hidden');
-        }
-
-        async function startCamera() {
-            try {
-                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                els.video.srcObject = s;
-                els.video.play();
-                scanning = true;
-                scanStartTime = Date.now(); // Track start time
-                requestAnimationFrame(scanFrame);
-            } catch (e) { alert("Camera Error"); closeScanner(); }
-        }
-
-        function scanFrame() {
-            if (!scanning) return;
-            
-            // Draw video frame to check
-            if (els.video.readyState === els.video.HAVE_ENOUGH_DATA && !els.freeze.classList.contains('hidden') === false) {
-                const cv = document.createElement('canvas');
-                cv.width = 480; cv.height = 480;
-                const cx = cv.getContext('2d');
-                
-                // Center Crop Logic
-                const vw = els.video.videoWidth;
-                const vh = els.video.videoHeight;
-                const aspect = vw / vh;
-                
-                let sx = 0, sy = 0, sw = vw, sh = vh;
-                if (aspect > 1) { sw = vh; sx = (vw - sw) / 2; } 
-                else { sh = vw; sy = (vh - sh) / 2; }
-                
-                cx.drawImage(els.video, sx, sy, sw, sh, 0, 0, 480, 480);
-                
-                // Only process if we haven't found everything yet
-                if(!analysisReady) {
-                    processImageData(cx.getImageData(0,0,480,480), 480, 480, false);
-                }
-            }
-            requestAnimationFrame(scanFrame);
-        }
-
-        // --- Processing ---
-        function processImageData(img, w, h, isFileScan) {
-            let foundAny = false;
-            
-            [0, 1, 2].forEach(idx => {
-                const ch = ['r', 'g', 'b'][idx];
-                if (results[ch]) return;
-
-                const mono = new Uint8ClampedArray(img.data.length);
-                
-                // Threshold 120
-                for (let i = 0; i < img.data.length; i += 4) {
-                    const v = img.data[i + idx];
-                    const b = v < 120 ? 0 : 255; 
-                    mono[i] = mono[i+1] = mono[i+2] = b;
-                    mono[i+3] = 255;
-                }
-
-                const code = jsQR(mono, w, h, { inversionAttempts: "attemptBoth" });
-                
-                if (code) {
-                    results[ch] = code.data;
-                    foundAny = true;
-                }
-            });
-
-            if(foundAny) {
-                // Logic: Stop if Blue or All found
-                if (results.b || (results.r && results.g && results.b)) {
-                    analysisReady = true;
-                    
-                    if(isFileScan) {
-                        // Wait for animation to finish (handled in handleFile)
-                    } else {
-                        // Camera: Freeze and start animation
-                        triggerCaptureSequence();
-                    }
-                }
-            }
-            return foundAny;
-        }
-
-        function triggerCaptureSequence() {
-            scanning = false; // Stop requesting frames
-            
-            // 1. Freeze Frame
-            els.freeze.width = 480; els.freeze.height = 480;
-            const fctx = els.freeze.getContext('2d');
-            
-            // Re-draw with crop
-            const vw = els.video.videoWidth;
-            const vh = els.video.videoHeight;
-            const aspect = vw / vh;
-            let sx = 0, sy = 0, sw = vw, sh = vh;
-            if (aspect > 1) { sw = vh; sx = (vw - sw) / 2; } 
-            else { sh = vw; sy = (vh - sh) / 2; }
-            fctx.drawImage(els.video, sx, sy, sw, sh, 0, 0, 480, 480);
-            
-            els.video.classList.add('hidden');
-            els.freeze.classList.remove('hidden');
-            
-            // 2. Trigger Animation & Sound
-            startVisualizationSequence(true);
-        }
-
-        function startVisualizationSequence(success) {
-            els.scanContainer.classList.add('scan-active');
-            if(success) AudioEngine.playScan();
-            
-            // Wait 2.5s
-            setTimeout(() => {
-                // Flash & Result Sound
-                els.flash.classList.add('flash');
-                AudioEngine.playResult(success);
-                setTimeout(() => els.flash.classList.remove('flash'), 300);
-                
-                // Reveal Data
-                if(success) {
-                    updateResultUI();
-                } else {
-                    handleFailUI();
-                }
-            }, 2500);
-        }
-
-        function updateResultUI() {
-            let count = 0;
-            ['r', 'g', 'b'].forEach(ch => {
-                const el = els['res' + ch.toUpperCase()];
-                const data = results[ch];
-                
-                if(data) {
-                    count++;
-                    el.querySelector('span').textContent = data;
-                    el.querySelector('.indicator').className = 'indicator active-'+ch;
-                    el.classList.remove('hidden');
-                    el.style.opacity = 1;
-                    
-                    // Update Main Screen
-                    els[ch].value = data;
-                } else {
-                    el.classList.add('hidden'); // Hide empty
-                }
-            });
-            
-            generateQR(); // Update main screen QR
-            els.failBtn.classList.add('hidden');
-        }
-
-        function handleFailUI() {
-            ['r', 'g', 'b'].forEach(ch => {
-                const el = els['res' + ch.toUpperCase()];
-                el.classList.remove('hidden');
-                el.style.opacity = 1;
-                el.querySelector('span').textContent = "[!] Не вдалося зчитати";
-                el.querySelector('.indicator').className = 'indicator';
-            });
-            els.failBtn.classList.remove('hidden');
-        }
-
-        // --- File Handler ---
-        function handleFile(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const img = new Image();
-                img.onload = () => {
-                    // Open UI & Reset State
-                    const ui = document.getElementById('scanner-ui');
-                    ui.classList.remove('hidden');
-                    results = {r:null, g:null, b:null};
-                    analysisReady = false;
-                    
-                    // Show Image (Center Crop)
-                    els.freeze.width = 480; els.freeze.height = 480;
-                    const fctx = els.freeze.getContext('2d');
-                    fctx.fillStyle = "#000"; fctx.fillRect(0, 0, 480, 480);
-                    
-                    // Calculate crop
-                    const aspect = img.width / img.height;
-                    let sx = 0, sy = 0, sw = img.width, sh = img.height;
-                    if (aspect > 1) { sw = img.height; sx = (img.width - sw) / 2; } 
-                    else { sh = img.width; sy = (img.height - sh) / 2; }
-                    
-                    fctx.drawImage(img, sx, sy, sw, sh, 0, 0, 480, 480);
-                    
-                    els.freeze.classList.remove('hidden');
-                    els.video.classList.add('hidden');
-                    els.failBtn.classList.add('hidden');
-                    
-                    // Reset Indicators visual
-                    ['r', 'g', 'b'].forEach(ch => {
-                        const el = els['res' + ch.toUpperCase()];
-                        el.querySelector('span').textContent = ch.toUpperCase() + ': Waiting...';
-                        el.querySelector('.indicator').className = 'indicator';
-                        el.classList.remove('hidden');
-                        el.style.opacity = 0.5;
-                    });
-
-                    // Process Logic (High Res internal)
-                    const scanSize = 1024;
-                    const scv = document.createElement('canvas');
-                    scv.width = scanSize; scv.height = scanSize;
-                    const sctx = scv.getContext('2d');
-                    
-                    // Crop for analysis too
-                    let ssx=0, ssy=0, ssw=img.width, ssh=img.height;
-                    const sAspect = img.width / img.height;
-                    if (sAspect > 1) { ssw = img.height; ssx = (img.width - ssw) / 2; }
-                    else { ssh = img.width; ssy = (img.height - ssh) / 2; }
-                    
-                    sctx.drawImage(img, ssx, ssy, ssw, ssh, 0, 0, scanSize, scanSize);
-                    
-                    processImageData(sctx.getImageData(0,0,scanSize,scanSize), scanSize, scanSize, true);
-                    
-                    // Trigger Animation
-                    startVisualizationSequence(analysisReady);
-                };
-                img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function saveQR() {
-            const a = document.createElement('a');
-            a.download = 'QRGB_PRO.png'; a.href = els.main.toDataURL(); a.click();
-        }
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
 </html>
