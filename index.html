@@ -3,32 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v3.3 // Layers & Density</title>
-   
+    <title>QRnament v3.1 // Spectral 7x7</title>
+    
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
     <style>
-        :root {
-            --neon-green: #00ff41;
-            --neon-red: #ff004d;
-            --neon-blue: #0088ff;
-            --glass-bg: rgba(0, 255, 65, 0.05);
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            overflow-x: hidden; 
         }
-        body {
-            background: #000;
-            color: #fff;
-            font-family: 'Inter', system-ui, sans-serif;
-            overflow-x: hidden;
-        }
-        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; }
+        
+        /* Logo Colors */
+        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
         .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
 
+        /* Canvas & Video */
         #canvas {
-            width: 100%;
-            height: 100%;
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
             image-rendering: pixelated;
         }
+
         #video {
             position: absolute;
             inset: 0;
@@ -39,57 +40,66 @@
             transform: scaleX(-1);
             display: none;
         }
-        .scan-line {
-            position: absolute;
-            left: 0; right: 0;
-            height: 4px;
-            background: var(--neon-green);
-            box-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green);
-            top: 0;
-            z-index: 20;
+
+        /* Scan FX */
+        .scan-line { 
+            position: absolute; 
+            left: 0; right: 0; 
+            height: 4px; 
+            background: #00ff41; 
+            box-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41; 
+            top: 0; 
+            z-index: 20; 
             pointer-events: none;
             display: none;
         }
+
         @keyframes pulse {
-            0% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
-            50% { opacity: 1; box-shadow: 0 0 40px var(--neon-green), 0 0 10px #fff; height: 6px; }
-            100% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
+            0% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
+            50% { opacity: 1; box-shadow: 0 0 40px #00ff41, 0 0 10px #fff; height: 6px; }
+            100% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
         }
+
+        /* Flash Effect */
         .flash-overlay {
-            position: absolute;
-            inset: 0;
-            background: white;
-            opacity: 0;
-            pointer-events: none;
+            position: absolute; 
+            inset: 0; 
+            background: white; 
+            opacity: 0; 
+            pointer-events: none; 
             z-index: 30;
             transition: opacity 0.1s;
         }
+
+        /* Menu Overlay */
         .menu-overlay {
-            position: fixed;
-            inset: 0;
+            position: fixed; 
+            inset: 0; 
             background: rgba(0,0,0,0.98);
-            z-index: 100;
+            z-index: 100; 
             transform: translateX(100%);
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex;
-            flex-direction: column;
+            display: flex; 
+            flex-direction: column; 
             padding: 2rem;
             overflow-y: auto;
         }
         .menu-overlay.open { transform: translateX(0); }
+
+        /* UI Elements */
         .btn-active:active { transform: scale(0.96); }
+
         .neon-btn-green {
-            background: var(--glass-bg);
-            border: 1px solid var(--neon-green);
+            background: rgba(0, 255, 65, 0.05);
+            border: 1px solid #00ff41;
             box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
-            text-shadow: 0 0 5px var(--neon-green);
+            text-shadow: 0 0 5px #00ff41;
             transition: all 0.2s;
         }
-        .neon-btn-green:hover {
-            box-shadow: 0 0 20px var(--neon-green), inset 0 0 30px rgba(0, 255, 65, 0.1);
-        }
+        .neon-btn-green:hover { box-shadow: 0 0 20px #00ff41, inset 0 0 30px rgba(0, 255, 65, 0.1); }
+
         .neon-text-glow {
-            border: 1px solid var(--neon-green);
+            border: 1px solid #00ff41;
             box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
             transition: all 0.3s;
         }
@@ -97,9 +107,11 @@
             box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
             border-color: #fff;
         }
+
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: var(--neon-green); }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
@@ -111,19 +123,48 @@
                 <button onclick="App.setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
                 <button onclick="App.setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
             </div>
-            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-neonGreen">&times;</button>
+            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-white">&times;</button>
         </div>
-       
+        
         <div class="space-y-6 text-sm">
             <div>
                 <h2 class="text-xl font-black mb-2 flex items-center gap-2">
                     <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
                 </h2>
-                <p class="text-neonGreen opacity-70">v3.3 // Layers & Density</p>
+                <p class="text-neonGreen opacity-70">v3.1 // Spectral 7x7</p>
             </div>
+
             <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_tech">Технологія</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_tech_text">Фрактальне наслоювання модулів 7x7. Layers (L) відповідають за глибину, Density (D) — за деталізацію текстури.</p>
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_usage">📱 Як користуватися</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_usage_text">Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.</p>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_tech">⚙️ Технологія</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах. Авторський підхід дозволяє зробити коди придатними для фізичного носія (друк).</p>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_author">🎨 Автор</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_author_text">Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).</p>
+            </div>
+            
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_science">📚 Наукова база</h3>
+                <div class="flex flex-col gap-2 text-xs text-blue-400 underline">
+                    <a href="https://zenodo.org/records/18895764" target="_blank">Zenodo Research</a>
+                    <a href="https://medium.com/@Bakminsterfuler/sci-universal-model-905efe92e766" target="_blank">Medium Article</a>
+                    <a href="https://telegra.ph/White-Paper-SCI-Encoding-02-22" target="_blank">White Paper (UA)</a>
+                    <a href="https://telegra.ph/RSS-Reflectance-Synchronized-System-02-19" target="_blank">RSS System</a>
+                </div>
+            </div>
+
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_contacts">📩 Контакти</h3>
+                <p class="text-zinc-500 leading-relaxed text-xs">
+                    Email: <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400">bakminsterfuler@gmail.com</a><br>
+                    Портфоліо: <a href="https://astra31415926.github.io/" target="_blank" class="text-blue-400">astra31415926.github.io</a>
+                </p>
             </div>
         </div>
     </div>
@@ -132,39 +173,21 @@
         <h1 class="text-2xl font-black tracking-tighter uppercase">
             <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
         </h1>
-        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors">
+        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors neon-border-btn">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>
     </header>
 
-    <!-- Controls -->
-    <div class="mb-4 relative flex gap-2">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow" placeholder="Type to generate..."></textarea>
-        <button onclick="App.generate()" class="bg-black text-white font-black px-4 rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Gen</button>
+    <!-- Controls (No GEN button) -->
+    <div class="mb-4 relative">
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow pr-12" placeholder="Type to generate..."></textarea>
+        <!-- Trash Icon -->
+        <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500 transition-colors p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
     </div>
 
-    <!-- Layers & Density -->
-    <div class="mb-4 grid grid-cols-2 gap-3">
-        <div class="flex flex-col items-center justify-between bg-zinc-900 p-3 rounded-2xl border border-white/5">
-            <span class="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Layers (L)</span>
-            <div class="flex items-center gap-3">
-                <button onclick="App.changeParam('layers', -1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">−</button>
-                <span id="val-layers" class="text-2xl font-black text-neonGreen w-6 text-center">2</span>
-                <button onclick="App.changeParam('layers', 1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">+</button>
-            </div>
-        </div>
-       
-        <div class="flex flex-col items-center justify-between bg-zinc-900 p-3 rounded-2xl border border-white/5">
-            <span class="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Density (D)</span>
-            <div class="flex items-center gap-3">
-                <button onclick="App.changeParam('density', -1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">−</button>
-                <span id="val-density" class="text-2xl font-black text-neonGreen w-6 text-center">2</span>
-                <button onclick="App.changeParam('density', 1)" class="w-7 h-7 flex items-center justify-center rounded-lg neon-btn-ghost text-lg font-bold">+</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Canvas -->
+    <!-- Display Container -->
     <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
         <canvas id="canvas" width="1024" height="1024"></canvas>
         <video id="video" playsinline></video>
@@ -175,7 +198,7 @@
     <!-- Actions -->
     <div class="flex flex-col gap-3">
         <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
-       
+        
         <div class="grid grid-cols-2 gap-3">
             <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
             <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
@@ -186,156 +209,40 @@
     <p id="status" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Ready</p>
 
     <script>
-        // --- SPRITE LIBRARY 7x7 ---
-       const SPRITE_LIB_7x7 = [
-    [73,42,28,127,28,42,73], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
-    [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [0,62,34,42,46,32,63],
-    [15,1,29,5,52,16,64], [64,96,112,120,112,96,64], [76,102,51,25,51,102,76],
-    [119,69,117,0,87,81,119], [119,85,119,0,119,85,119], [119,65,93,20,93,65,119],
-    [62,73,93,127,93,73,62], [42,107,8,119,8,107,42], [8,42,8,119,8,42,8],
-    [28,8,65,99,65,8,28], [54,99,73,20,73,99,54], [63,31,15,7,3,1,0],
-    [127,63,31,15,7,3,1], [127,31,31,7,7,1,1], [119,17,93,68,119,17,89],
-    [119,21,87,80,127,17,89], [119,85,127,20,127,85,119], [87,80,87,0,117,5,117],
-    [95,80,87,65,117,5,125], [30,80,87,65,117,5,60], [91,80,11,93,104,5,109],
-    [42,99,8,93,8,99,42], [99,99,0,0,0,99,99], [99,99,99,99,99,99,99],
-    [119,93,99,34,99,93,119], [54,85,99,8,99,85,54], [91,73,109,36,54,18,91],
-    [127,8,107,34,107,8,127], [42,34,42,8,42,34,42], [56,43,9,127,72,106,14],
-    [60,72,81,99,69,9,30], [12,56,33,107,66,14,24], [32,126,34,34,34,63,2],
-    [100,94,51,42,102,61,19], [6,92,118,34,55,29,48], [28,62,119,99,119,62,28],
-    [62,99,73,93,73,99,62], [126,67,89,85,77,97,63], [54,85,107,28,107,85,54],
-    [127,119,99,73,99,119,127], [12,22,51,113,14,76,104], [107,73,8,127,8,73,107],
-    [0,62,34,42,58,2,126], [85,21,117,5,125,1,127], [52,102,71,85,71,102,52],
-    [8,8,42,34,54,20,93], [119,99,107,8,107,99,119], [62,34,107,8,107,34,62],
-    [73,62,34,107,34,62,73], [123,123,96,107,3,111,111], [91,27,96,107,3,108,109],
-    [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
-];
+        // --- 1. SPRITE LIBRARY 7x7 (60 Modules) ---
+        const SPRITE_LIB_7x7 = [
+            [73,42,28,127,28,42,73], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
+            [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [0,62,34,42,46,32,63],
+            [15,1,29,5,52,16,64], [64,96,112,120,112,96,64], [76,102,51,25,51,102,76],
+            [119,69,117,0,87,81,119], [119,85,119,0,119,85,119], [119,65,93,20,93,65,119],
+            [62,73,93,127,93,73,62], [42,107,8,119,8,107,42], [8,42,8,119,8,42,8],
+            [28,8,65,99,65,8,28], [54,99,73,20,73,99,54], [63,31,15,7,3,1,0],
+            [127,63,31,15,7,3,1], [127,31,31,7,7,1,1], [119,17,93,68,119,17,89],
+            [119,21,87,80,127,17,89], [119,85,127,20,127,85,119], [87,80,87,0,117,5,117],
+            [95,80,87,65,117,5,125], [30,80,87,65,117,5,60], [91,80,11,93,104,5,109],
+            [42,99,8,93,8,99,42], [99,99,0,0,0,99,99], [99,99,99,99,99,99,99],
+            [119,93,99,34,99,93,119], [54,85,99,8,99,85,54], [91,73,109,36,54,18,91],
+            [127,8,107,34,107,8,127], [42,34,42,8,42,34,42], [56,43,9,127,72,106,14],
+            [60,72,81,99,69,9,30], [12,56,33,107,66,14,24], [32,126,34,34,34,63,2],
+            [100,94,51,42,102,61,19], [6,92,118,34,55,29,48], [28,62,119,99,119,62,28],
+            [62,99,73,93,73,99,62], [126,67,89,85,77,97,63], [54,85,107,28,107,85,54],
+            [127,119,99,73,99,119,127], [12,22,51,113,14,76,104], [107,73,8,127,8,73,107],
+            [0,62,34,42,58,2,126], [85,21,117,5,125,1,127], [52,102,71,85,71,102,52],
+            [8,8,42,34,54,20,93], [119,99,107,8,107,99,119], [62,34,107,8,107,34,62],
+            [73,62,34,107,34,62,73], [123,123,96,107,3,111,111], [91,27,96,107,3,108,109],
+            [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
+        ];
 
-        // --- AUDIO ENGINE (Приємний звук зі старої версії) ---
-        const AudioEngine = {
-            ctx: null,
-            scanNodes: [],
-            beepInterval: null,
-            initialized: false,
-
-            init() {
-                if (this.initialized) return;
-                try {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    this.initialized = true;
-                } catch(e) {}
-            },
-
-            playClick() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.value = 1350;
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.08, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-                osc.connect(gain).connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.08);
-            },
-
-            playScan() {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 2.5);
-
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.08, now + 0.5);
-                gain.gain.setValueAtTime(0.08, now + 2.0);
-                gain.gain.linearRampToValueAtTime(0.001, now + 2.5);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 2.6);
-            },
-
-            startScanAtmosphere() {
-                this.init();
-                this.stopAll();
-
-                const drone = this.ctx.createOscillator();
-                drone.type = 'sine';
-                drone.frequency.value = 42;
-                const droneGain = this.ctx.createGain();
-                droneGain.gain.value = 0.09;
-                drone.connect(droneGain).connect(this.ctx.destination);
-                drone.start();
-                this.scanNodes.push(drone);
-
-                const beep = this.ctx.createOscillator();
-                beep.type = 'square';
-                beep.frequency.value = 920;
-                const beepGain = this.ctx.createGain();
-                beepGain.gain.value = 0.025;
-                beep.connect(beepGain).connect(this.ctx.destination);
-                beep.start();
-                this.scanNodes.push(beep);
-
-                this.beepInterval = setInterval(() => {
-                    if (!this.scanNodes.includes(beep)) return;
-                    const now = this.ctx.currentTime;
-                    beepGain.gain.setValueAtTime(0.025, now);
-                    beepGain.gain.linearRampToValueAtTime(0.001, now + 0.12);
-                }, 280);
-            },
-
-            stopAll() {
-                if (this.beepInterval) clearInterval(this.beepInterval);
-                this.scanNodes.forEach(n => { try { n.stop(); } catch(e) {} });
-                this.scanNodes = [];
-            },
-
-            playResult(success) {
-                this.init();
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.12, now);
-
-                if (success) {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(2500, now);
-                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.3);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
-                } else {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(180, now);
-                    osc.frequency.linearRampToValueAtTime(80, now + 0.4);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.45);
-                }
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.6);
-            }
-        };
-
-        // --- APP MODULE ---
+        // --- 2. APP MODULE ---
         const App = {
             state: {
                 lang: 'ua',
                 frozen: false,
-                isScanning: false,
-                layers: 2,
-                density: 2
+                isScanning: false
             },
+
             els: {},
+
             init() {
                 this.els = {
                     canvas: document.getElementById('canvas'),
@@ -345,45 +252,34 @@
                     scanLine: document.getElementById('scan-line'),
                     flash: document.getElementById('flash-layer'),
                     menu: document.getElementById('menu-overlay'),
-                    fileInput: document.getElementById('file-input'),
-                    valLayers: document.getElementById('val-layers'),
-                    valDensity: document.getElementById('val-density')
+                    fileInput: document.getElementById('file-input')
                 };
-
+                
                 this.els.ctx = this.els.canvas.getContext('2d');
-
+                
+                // Auto-generation on Input
                 this.els.input.addEventListener('input', () => {
                     if (this.state.frozen) this.state.frozen = false;
                     this.generate();
                 });
-
+                
                 this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
-
+                
+                // Init Audio on first interaction
                 document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
-
+                
                 this.clearCanvas();
                 this.setLang('ua');
             },
 
-            changeParam(type, delta) {
-                if (type === 'layers') {
-                    let val = this.state.layers + delta;
-                    if (val < 1) val = 1;
-                    if (val > 10) val = 10;
-                    this.state.layers = val;
-                    this.els.valLayers.innerText = val;
-                    AudioEngine.playClick();
-                    this.generate();
-                } else if (type === 'density') {
-                    let val = this.state.density + delta;
-                    if (val < 1) val = 1;
-                    if (val > 5) val = 5;
-                    this.state.density = val;
-                    this.els.valDensity.innerText = val;
-                    AudioEngine.playClick();
-                    this.generate();
-                }
+            clearText() {
+                this.els.input.value = "";
+                this.clearCanvas();
+                this.updateStatus("Cleared");
+                AudioEngine.playClick();
             },
+
+            toggleMenu() { this.els.menu.classList.toggle('open'); },
 
             getTextSeed(text) {
                 let seed = 0;
@@ -392,32 +288,31 @@
             },
 
             generate() {
-                const text = this.els.input.value.trim();
+                const text = this.els.input.value;
                 if (!text) {
                     this.clearCanvas();
                     this.updateStatus("Waiting for input...");
                     return;
                 }
 
-                AudioEngine.playScan();
-
                 try {
+                    const utf8Text = unescape(encodeURIComponent(text));
                     const qr = qrcode(0, 'M');
-                    qr.addData(unescape(encodeURIComponent(text)));
+                    qr.addData(utf8Text);
                     qr.make();
-
+                    
                     const moduleCount = qr.getModuleCount();
                     const quietZone = 4;
                     const totalModules = moduleCount + quietZone * 2;
                     const modSize = 1024 / totalModules;
-
+                    
                     const baseSeed = this.getTextSeed(text);
-                    const L = this.state.layers;
-                    const D = this.state.density;
 
-                    const gridR = this.buildDensityGrid(totalModules, baseSeed, L, D);
-                    const gridG = this.buildDensityGrid(totalModules, baseSeed + 500, L, D);
-
+                    // Build 7x7 Grids
+                    const gridR = this.build7x7Grid(totalModules, baseSeed);
+                    const gridG = this.build7x7Grid(totalModules, baseSeed + 500); // Different seed for Green
+                    
+                    // Render
                     const ctx = this.els.ctx;
                     ctx.globalCompositeOperation = "source-over";
                     ctx.fillStyle = "#000000";
@@ -426,11 +321,12 @@
                     ctx.globalCompositeOperation = "screen";
 
                     ctx.fillStyle = "#FF0000";
-                    this.drawDensityGrid(ctx, gridR, totalModules, modSize);
-
+                    this.drawGrid(ctx, gridR, totalModules, modSize);
+                    
                     ctx.fillStyle = "#00FF00";
-                    this.drawDensityGrid(ctx, gridG, totalModules, modSize);
+                    this.drawGrid(ctx, gridG, totalModules, modSize);
 
+                    // Blue QR
                     ctx.fillStyle = "#0000FF";
                     for (let r = 0; r < moduleCount; r++) {
                         for (let c = 0; c < moduleCount; c++) {
@@ -441,41 +337,54 @@
                     }
 
                     ctx.globalCompositeOperation = "source-over";
-                    this.updateStatus(`L:${L} D:${D} | Seed: ${baseSeed}`);
+                    this.updateStatus("Generated 7x7 | Seed: " + baseSeed);
+
                 } catch (e) {
                     console.error(e);
                     this.updateStatus("Error");
                 }
             },
 
-            buildDensityGrid(size, seed, layers, density) {
+            build7x7Grid(size, seed) {
                 const grid = Array(size).fill(0).map(() => Array(size).fill(0));
                 const center = Math.floor(size / 2);
-
+                
+                // Iterate Octant
                 for (let y = 0; y <= center; y++) {
                     for (let x = 0; x <= y; x++) {
+                        
                         let val = 0;
-                        const tileX = Math.floor((x + 3) / 7);
-                        const tileY = Math.floor((y + 3) / 7);
-                        const localX = (x + 3) % 7;
-                        const localY = (y + 3) % 7;
+                        
+                        // Tiling Logic: Centered 7x7
+                        // We offset coordinates by 3 so that (0,0) is at the start of a 7x7 block centered in the grid
+                        const tx = x + 3; 
+                        const ty = y + 3;
+                        
+                        const tileX = Math.floor(tx / 7);
+                        const tileY = Math.floor(ty / 7);
+                        const localX = tx % 7;
+                        const localY = ty % 7;
 
-                        for (let l = 0; l < layers; l++) {
-                            for (let d = 0; d < density; d++) {
-                                const patternIdx = (seed + l * 13 + d + tileX * 17 + tileY * 11) % SPRITE_LIB_7x7.length;
-                                const pattern = SPRITE_LIB_7x7[patternIdx];
-                                if ((pattern[localY] >> (6 - localX)) & 1) {
-                                    val += (158 * Math.pow(0.618, l)) / density;
-                                }
-                            }
+                        // Dynamic Pattern Selection
+                        const patternIdx = (seed + tileX * 13 + tileY * 7) % SPRITE_LIB_7x7.length;
+                        const pattern = SPRITE_LIB_7x7[patternIdx];
+                        
+                        // Check bit (Bitmask)
+                        if ((pattern[localY] >> (6 - localX)) & 1) {
+                            val = 255; // Binary On/Off for this channel
                         }
 
-                        const points = [[x,y],[y,x],[-x,y],[-y,x],[x,-y],[y,-x],[-x,-y],[-y,-x]];
+                        // Mirror to 8 points
+                        const points = [
+                            [x, y], [y, x], [-x, y], [-y, x],
+                            [x, -y], [y, -x], [-x, -y], [-y, -x]
+                        ];
+
                         points.forEach(([px, py]) => {
                             const gx = center + px;
                             const gy = center + py;
                             if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
-                                grid[gy][gx] = Math.min(255, val);
+                                grid[gy][gx] = val;
                             }
                         });
                     }
@@ -483,23 +392,23 @@
                 return grid;
             },
 
-            drawDensityGrid(ctx, grid, size, cellSize) {
-                for(let r = 0; r < size; r++) {
-                    for(let c = 0; c < size; c++) {
-                        const val = grid[r][c];
-                        if (val > 0) {
-                            ctx.fillStyle = `rgba(${val}, ${val}, ${val}, 0.95)`;
+            drawGrid(ctx, grid, size, cellSize) {
+                for(let r=0; r<size; r++) {
+                    for(let c=0; c<size; c++) {
+                        if(grid[r][c]) {
                             ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
                         }
                     }
                 }
             },
 
-            // === SCANNER & RITUAL (без змін) ===
+            // --- SCANNER & RITUAL LOGIC ---
+
             startCamera() {
                 if(this.state.isScanning) return;
                 this.state.isScanning = true;
                 this.updateStatus("Accessing Camera...");
+
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                     .then(stream => {
                         this.els.video.srcObject = stream;
@@ -518,7 +427,9 @@
             stopCamera() {
                 this.state.isScanning = false;
                 AudioEngine.stopAll();
-                if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
+                if(this.els.video.srcObject) {
+                    this.els.video.srcObject.getTracks().forEach(t => t.stop());
+                }
                 this.els.video.style.display = 'none';
                 this.els.scanLine.style.display = 'none';
             },
@@ -540,7 +451,8 @@
 
             processFrame(source, w, h) {
                 const canvas = document.createElement('canvas');
-                canvas.width = 1024; canvas.height = 1024;
+                canvas.width = 1024;
+                canvas.height = 1024;
                 const ctx = canvas.getContext('2d');
                 const aspect = w / h;
                 let sx = 0, sy = 0, sw = w, sh = h;
@@ -551,7 +463,7 @@
                 const data = imageData.data;
                 for (let i = 0; i < data.length; i += 4) {
                     const b = data[i+2];
-                    data[i] = data[i+1] = data[i+2] = b;
+                    data[i] = b; data[i+1] = b; data[i+2] = b;
                 }
                 return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
             },
@@ -560,7 +472,7 @@
                 const ctx = this.els.ctx;
                 const aspect = w / h;
                 let sx = 0, sy = 0, sw = w, sh = h;
-                if (aspect > 1) { sw = h; sx = (w - sw) / 2; }
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
                 else { sh = w; sy = (h - sh) / 2; }
                 ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
             },
@@ -568,7 +480,7 @@
             performRitual(code) {
                 this.state.isScanning = true;
                 AudioEngine.startScanAtmosphere();
-
+                
                 const line = this.els.scanLine;
                 line.style.display = 'block';
                 line.style.animation = 'pulse 1.5s infinite';
@@ -581,15 +493,14 @@
 
                 setTimeout(() => {
                     this.els.flash.style.opacity = '1';
+                    
                     AudioEngine.playResult(!!code);
-
+                    
                     setTimeout(() => {
                         this.els.flash.style.opacity = '0';
                         line.style.animation = 'none';
-
                         if (code) {
-                            try { this.els.input.value = decodeURIComponent(escape(code.data)); } 
-                            catch(e) { this.els.input.value = code.data; }
+                            try { this.els.input.value = decodeURIComponent(escape(code.data)); } catch(e) { this.els.input.value = code.data; }
                             this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
                             this.els.ctx.fillRect(0, 0, 1024, 1024);
                             this.updateStatus("Decoded!");
@@ -623,28 +534,166 @@
                 e.target.value = '';
             },
 
-            clearCanvas() { 
-                this.els.ctx.fillStyle = "#000"; 
-                this.els.ctx.fillRect(0,0,1024,1024); 
-            },
+            // --- UTILS ---
+            
+            clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
             updateStatus(msg) { this.els.status.innerText = msg; },
-            toggleMenu() { this.els.menu.classList.toggle('open'); },
+            
             setLang(lang) {
                 this.state.lang = lang;
                 document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
                 document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
                 document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
                 document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
+                
+                // Update Content
+                const i18n = {
+                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
+                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
+                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
+                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах. Авторський підхід дозволяє зробити коди придатними для фізичного носія (друк).", en: "Color 2D codes expand classic QR (Denso Wave, 1994) by distributing data across channels. The approach makes them suitable for physical media (print)." },
+                    m_author: { ua: "🎨 Автор", en: "🎨 Author" },
+                    m_author_text: { ua: "Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).", en: "Mykhailo Kashkarov — science-art artist (optics, spectral design)." },
+                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" },
+                    m_contacts: { ua: "📩 Контакти", en: "📩 Contacts" }
+                };
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(i18n[key]) el.textContent = i18n[key][lang];
+                });
             },
+
             save() {
                 const link = document.createElement('a');
-                link.download = 'qrnament-v3.3.png';
+                link.download = 'qrnament-7x7.png';
                 link.href = this.els.canvas.toDataURL();
                 link.click();
             }
         };
 
-        // Initialize
+        // --- AUDIO ENGINE v4.5 ---
+        const AudioEngine = {
+            ctx: null,
+            scanNodes: [],
+            initialized: false,
+
+            init() {
+                if(this.initialized) return;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.initialized = true;
+                } catch(e) {}
+            },
+
+            playClick() {
+                this.init();
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = 1200;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            },
+
+            playScan() {
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                // Frequency: 200Hz -> 1200Hz over 2.5s
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 2.5);
+                
+                // Volume: Soft attack and release
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.08, now + 0.5);
+                gain.gain.setValueAtTime(0.08, now + 2.0);
+                gain.gain.linearRampToValueAtTime(0.001, now + 2.5);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 2.6);
+            },
+
+            startScanAtmosphere() {
+                this.init();
+                this.stopAll();
+
+                const drone = this.ctx.createOscillator();
+                drone.type = 'sine';
+                drone.frequency.value = 40;
+                const droneGain = this.ctx.createGain();
+                droneGain.gain.value = 0.10; 
+                drone.connect(droneGain);
+                droneGain.connect(this.ctx.destination);
+                drone.start();
+                this.scanNodes.push(drone);
+
+                const beep = this.ctx.createOscillator();
+                beep.type = 'square';
+                beep.frequency.value = 880;
+                const beepGain = this.ctx.createGain();
+                beepGain.gain.value = 0.03; 
+                beep.connect(beepGain);
+                beepGain.connect(this.ctx.destination);
+                beep.start();
+                this.scanNodes.push(beep);
+
+                const toggle = () => {
+                    if(!this.scanNodes.includes(beep)) return;
+                    const now = this.ctx.currentTime;
+                    beepGain.gain.setValueAtTime(beepGain.gain.value, now);
+                    beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.02 ? 0.001 : 0.05, now + 0.1);
+                };
+                this.beepInterval = setInterval(toggle, 250);
+            },
+
+            stopAll() {
+                if(this.beepInterval) clearInterval(this.beepInterval);
+                this.scanNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+                this.scanNodes = [];
+            },
+
+            playResult(success) {
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                gain.gain.setValueAtTime(0.1, now);
+
+                if(success) {
+                    // High clean tone
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(2500, now);
+                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.3);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                } else {
+                    // Low dirty tone
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                }
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            }
+        };
+
+        // Initialize App
         document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
