@@ -1,7 +1,7 @@
 QRnament: Spectral Channel Integrity (SCI)
 Deterministic Spectral Response Normalization for Subtractive Media
 Project Status: Proof of Concept (PoC)
-Scientific Framework: DOI: 10.5281/zenodo.18895764
+[Read the full scientific paper on Zenodo](https://zenodo.org/records/18895764)
 
 🎯 The Problem: Inter-Channel Noise in Print
 In digital additive environments (RGB), color channels are independent (orthogonal). However, transferring this logic to physical subtractive media (inks/pigments) creates chaos:
