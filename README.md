@@ -43,6 +43,6 @@ Multilayer Visuals: Embedding multiple independent images on a single surface, r
 📄 Scientific Publication
 For the full mathematical model, amplitude normalization charts, and experimental results, please refer to the original paper:
 "Universal SCI Model: Deterministic Spectral Response Normalization" — Read on Zenodo
-[Download my vCard (Electronic Business Card)](contact.vcf)
+[Download my vCard](contact.vcf)
 
 © 2026 Mikhail Kashkarov. All rights reserved. The SCI Technology is the intellectual property of the author.
