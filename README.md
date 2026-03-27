@@ -1,3 +1,4 @@
+![QRnament Preview](preview.png)
 QRnament: Spectral Channel Integrity (SCI)
 Deterministic Spectral Response Normalization for Subtractive Media
 Project Status: Proof of Concept (PoC)
