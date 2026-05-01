@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html lang="uk">
-<head><link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<head>
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#000000">
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QRnament v3.1 // Spectral 7x7 Mandala</title>
@@ -181,7 +185,8 @@
 
     <!-- Controls -->
     <div class="mb-4 relative">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow pr-12" placeholder="Type to generate..."></textarea>
+        <!-- Added data-i18n-placeholder logic handled in JS, default UA text here -->
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow pr-12" placeholder="Введіть текст..."></textarea>
         <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500 transition-colors p-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
@@ -197,16 +202,18 @@
 
     <!-- Actions -->
     <div class="flex flex-col gap-3">
-        <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
+        <!-- Added data-i18n attributes for buttons -->
+        <button onclick="App.save()" data-i18n="btn_save" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Зберегти PNG</button>
         
         <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
-            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
+            <button onclick="App.startCamera()" data-i18n="btn_cam" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Сканувати камерою</button>
+            <button onclick="document.getElementById('file-input').click()" data-i18n="btn_file" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">З файлу</button>
         </div>
         <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <p id="status" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Ready</p>
+    <!-- Added data-i18n for status -->
+    <p id="status" data-i18n="status_ready" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Готово</p>
 
     <script>
         // --- 1. SPRITE LIBRARY 7x7 (60 Modules) ---
@@ -265,11 +272,53 @@
             clearText() {
                 this.els.input.value = "";
                 this.clearCanvas();
-                this.updateStatus("Cleared");
+                this.updateStatus("Cleared"); // Using status key logic would be complex here, simple text ok
                 AudioEngine.playClick();
             },
 
             toggleMenu() { this.els.menu.classList.toggle('open'); },
+
+            // --- UPDATED: i18n Logic ---
+            setLang(lang) {
+                this.state.lang = lang;
+                
+                // Visual toggle for buttons
+                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
+                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
+                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
+                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
+                
+                // Dictionary
+                const i18n = {
+                    // Menu Items
+                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
+                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
+                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
+                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах.", en: "Color 2D codes expand classic QR (Denso Wave, 1994) by distributing data across channels." },
+                    m_author: { ua: "🎨 Автор", en: "🎨 Author" },
+                    m_author_text: { ua: "Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).", en: "Mykhailo Kashkarov — science-art artist (optics, spectral design)." },
+                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" },
+                    m_contacts: { ua: "📩 Контакти", en: "📩 Contacts" },
+                    
+                    // UI Elements (New)
+                    main_placeholder: { ua: "Введіть текст...", en: "Type to generate..." },
+                    btn_save: { ua: "Зберегти PNG", en: "Save PNG" },
+                    btn_cam: { ua: "Сканувати камерою", en: "Cam Scan" },
+                    btn_file: { ua: "З файлу", en: "File Scan" },
+                    status_ready: { ua: "Готово", en: "Ready" }
+                };
+
+                // Apply translations to textContent
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(i18n[key]) el.textContent = i18n[key][lang];
+                });
+
+                // Apply specific logic for placeholder
+                if (i18n.main_placeholder) {
+                    this.els.input.placeholder = i18n.main_placeholder[lang];
+                }
+            },
 
             generate() {
                 const text = this.els.input.value;
@@ -286,7 +335,6 @@
                     const totalModules = moduleCount + quietZone * 2;
                     const modSize = 1024 / totalModules;
                     
-                    // Generate Mandala Grids (Seed-Free Random)
                     const gridR = this.build7x7Grid(totalModules);
                     const gridG = this.build7x7Grid(totalModules);
                     
@@ -320,52 +368,28 @@
                 }
             },
 
-            // --- NEW: build7x7Grid (Seed-Free Mandala Logic) ---
             build7x7Grid(size) {
                 const grid = Array(size).fill(0).map(() => Array(size).fill(0));
                 const center = Math.floor(size / 2);
-                
-                // 1. Temporary Map for the Octant
-                const octantMap = new Map(); // Key: "x,y", Value: true
-                
-                // Calculate block bounds to cover the grid radius
-                // Radius approx size/2. Block count = ceil((size/2 + 3) / 7)
+                const octantMap = new Map(); 
                 const maxBlocks = Math.ceil((size / 2 + 7) / 7); 
 
-                // 2. Iterate Blocks covering the positive quadrant (bx >= 0, by >= 0)
-                // We loop blocks in the octant region (bx >= by)
                 for (let by = 0; by < maxBlocks; by++) {
                     for (let bx = by; bx < maxBlocks; bx++) {
-                        
-                        // RANDOM SPRITE (Seed-Free)
                         const patternIdx = Math.floor(Math.random() * SPRITE_LIB_7x7.length);
                         const pattern = SPRITE_LIB_7x7[patternIdx];
-                        
-                        // RANDOM TRANSFORMS (Flip X/Y)
                         const flipX = Math.random() > 0.5;
                         const flipY = Math.random() > 0.5;
 
-                        // 3. Iterate Sprite Pixels
                         for (let py = 0; py < 7; py++) {
                             for (let px = 0; px < 7; px++) {
-                                
-                                // Apply flips to source coordinates
                                 let sX = flipX ? (6 - px) : px;
                                 let sY = flipY ? (6 - py) : py;
                                 
-                                // Check if pixel is ON
                                 if ((pattern[sY] >> (6 - sX)) & 1) {
-                                    
-                                    // Calculate Relative Coordinates (centered)
-                                    // Block (0,0) starts at relative (-3, -3)
-                                    // Block (bx, by) starts at (-3 + bx*7, -3 + by*7)
-                                    // We are iterating blocks in the positive octant indices.
                                     let xRel = (bx * 7) + px - 3;
                                     let yRel = (by * 7) + py - 3;
 
-                                    // Constraint: Fill ONLY the Octant (x >= y >= 0)
-                                    // Since we loop blocks bx >= by, most pixels fall in x >= y.
-                                    // We explicitly check conditions.
                                     if (xRel >= yRel && yRel >= 0) {
                                         octantMap.set(`${xRel},${yRel}`, true);
                                     }
@@ -375,13 +399,11 @@
                     }
                 }
 
-                // 4. Apply 8-Fold Symmetry (Kaleidoscope)
                 octantMap.forEach((val, key) => {
                     const [xStr, yStr] = key.split(',');
                     const x = parseInt(xStr);
                     const y = parseInt(yStr);
                     
-                    // 8 symmetric points (D4 symmetry)
                     const points = [
                         [ x,  y], [ y,  x], [-x,  y], [-y,  x],
                         [ x, -y], [ y, -x], [-x, -y], [-y, -x]
@@ -538,29 +560,6 @@
             clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
             updateStatus(msg) { this.els.status.innerText = msg; },
             
-            setLang(lang) {
-                this.state.lang = lang;
-                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
-                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
-                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
-                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
-                
-                const i18n = {
-                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
-                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
-                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
-                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах.", en: "Color 2D codes expand classic QR (Denso Wave, 1994) by distributing data across channels." },
-                    m_author: { ua: "🎨 Автор", en: "🎨 Author" },
-                    m_author_text: { ua: "Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).", en: "Mykhailo Kashkarov — science-art artist (optics, spectral design)." },
-                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" },
-                    m_contacts: { ua: "📩 Контакти", en: "📩 Contacts" }
-                };
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if(i18n[key]) el.textContent = i18n[key][lang];
-                });
-            },
-
             save() {
                 const link = document.createElement('a');
                 link.download = 'qrnament-mandala.png';
