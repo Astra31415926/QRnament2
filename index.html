@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="theme-color" content="#000000">
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v3.1 // Spectral 7x7 Mandala</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#C8C8C8">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <title>QRnament v3.5 // Spectral Mandala</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,207 +15,231 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
     <style>
-        body { 
-            background: #000; 
-            color: #fff; 
-            font-family: 'Inter', system-ui, sans-serif; 
-            overflow-x: hidden; 
+        :root {
+            --bg-color: #000000;
+            --ui-font: 'Inter', system-ui, sans-serif;
         }
         
+        body { 
+            background: var(--bg-color); 
+            color: #fff; 
+            font-family: var(--ui-font); 
+            overflow-x: hidden;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
         /* Logo Colors */
         .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
         .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
 
-        /* Canvas & Video */
-        #canvas {
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            image-rendering: pixelated;
-        }
+        /* Screen Management */
+        .screen { display: none; flex-direction: column; min-height: 100vh; }
+        .screen.active { display: flex; }
 
-        #video {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #000;
-            transform: scaleX(-1);
-            display: none;
-        }
-
-        /* Scan FX */
-        .scan-line { 
-            position: absolute; 
-            left: 0; right: 0; 
-            height: 4px; 
-            background: #00ff41; 
-            box-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41; 
-            top: 0; 
-            z-index: 20; 
-            pointer-events: none;
-            display: none;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
-            50% { opacity: 1; box-shadow: 0 0 40px #00ff41, 0 0 10px #fff; height: 6px; }
-            100% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
-        }
-
-        /* Flash Effect */
-        .flash-overlay {
-            position: absolute; 
-            inset: 0; 
-            background: white; 
-            opacity: 0; 
-            pointer-events: none; 
-            z-index: 30;
-            transition: opacity 0.1s;
-        }
-
-        /* Menu Overlay */
-        .menu-overlay {
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0,0,0,0.98);
-            z-index: 100; 
-            transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; 
-            flex-direction: column; 
-            padding: 2rem;
-            overflow-y: auto;
-        }
-        .menu-overlay.open { transform: translateX(0); }
-
-        /* UI Elements */
-        .btn-active:active { transform: scale(0.96); }
-
-        .neon-btn-green {
-            background: rgba(0, 255, 65, 0.05);
-            border: 1px solid #00ff41;
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
-            text-shadow: 0 0 5px #00ff41;
-            transition: all 0.2s;
-        }
-        .neon-btn-green:hover { box-shadow: 0 0 20px #00ff41, inset 0 0 30px rgba(0, 255, 65, 0.1); }
-
-        .neon-text-glow {
-            border: 1px solid #00ff41;
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+        /* Inputs */
+        textarea {
+            background: rgba(10, 10, 10, 0.8);
+            border: 2px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-family: var(--ui-font);
+            resize: none;
             transition: all 0.3s;
         }
-        .neon-text-glow:focus {
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
-            border-color: #fff;
+        textarea:focus { 
+            outline: none; 
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(20, 20, 20, 0.9);
         }
+        
+        /* Buttons */
+        .btn-primary {
+            position: relative;
+            overflow: hidden;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+        }
+        .btn-create {
+            background: linear-gradient(135deg, #F97316, #EA580C);
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+        }
+        .btn-scan-ui {
+            background: linear-gradient(135deg, #14B8A6, #0D9488);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-secondary:active { background: rgba(255,255,255,0.1); }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        /* Viewfinder */
+        .viewfinder-corners {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 15;
+            transition: all 0.3s;
+        }
+        .corner {
+            position: absolute;
+            width: 20px; height: 20px;
+            border-color: rgba(255,255,255,0.3);
+            transition: all 0.3s;
+        }
+        .tl { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; }
+        .tr { top: 0; right: 0; border-top: 3px solid; border-right: 3px solid; }
+        .bl { bottom: 0; left: 0; border-bottom: 3px solid; border-left: 3px solid; }
+        .br { bottom: 0; right: 0; border-bottom: 3px solid; border-right: 3px solid; }
+        
+        .viewfinder-hunting .corner { 
+            border-color: #00ff41; 
+            box-shadow: 0 0 8px #00ff41;
+            animation: pulse 1.5s infinite alternate; 
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Effects */
+        @keyframes flash { 0% { opacity: 0; } 20% { opacity: 0.8; } 100% { opacity: 0; } }
+        .flash-anim { animation: flash 0.3s ease-out; }
+
+        /* Dropdown Menu */
+        .dropdown-menu { 
+            transform: translateY(-10px); opacity: 0; visibility: hidden; 
+            transition: all 0.2s ease; 
+        }
+        .dropdown-menu.show { transform: translateY(0); opacity: 1; visibility: visible; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
+<body class="p-4 pb-6">
 
-    <!-- Menu Overlay -->
-    <div id="menu-overlay" class="menu-overlay">
-        <div class="flex justify-between items-center mb-8">
-            <div class="flex gap-2 bg-zinc-800 p-1 rounded-lg border border-white/10">
-                <button onclick="App.setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
-                <button onclick="App.setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
-            </div>
-            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-white">&times;</button>
-        </div>
-        
-        <div class="space-y-6 text-sm">
-            <div>
-                <h2 class="text-xl font-black mb-2 flex items-center gap-2">
-                    <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
-                </h2>
-                <p class="text-neonGreen opacity-70">v3.1 // Spectral Mandala</p>
-            </div>
-
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_usage">📱 Як користуватися</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_usage_text">Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.</p>
-            </div>
-
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_tech">⚙️ Технологія</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах. Авторський підхід дозволяє зробити коди придатними для фізичного носія (друк).</p>
-            </div>
-
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_author">🎨 Автор</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_author_text">Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).</p>
-            </div>
+    <!-- GLOBAL ASSETS -->
+    <input type="file" id="file-input" accept="image/*" class="hidden">
+    
+    <!-- ===================== SCREEN: HOME ===================== -->
+    <div id="screen-home" class="screen active">
+        <header class="flex items-center justify-center relative z-50 h-20 mb-4">
+            <div class="w-10 h-10"></div>
             
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_science">📚 Наукова база</h3>
-                <div class="flex flex-col gap-2 text-xs text-blue-400 underline">
-                    <a href="https://zenodo.org/records/18895764" target="_blank">Zenodo Research</a>
-                    <a href="https://medium.com/@Bakminsterfuler/sci-universal-model-905efe92e766" target="_blank">Medium Article</a>
-                    <a href="https://telegra.ph/White-Paper-SCI-Encoding-02-22" target="_blank">White Paper (UA)</a>
-                    <a href="https://telegra.ph/RSS-Reflectance-Synchronized-System-02-19" target="_blank">RSS System</a>
-                </div>
+            <h1 class="text-3xl font-black tracking-tighter uppercase absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+            </h1>
+            
+            <button id="menu-btn-home" class="absolute right-0 w-10 h-10 flex items-center justify-center text-white text-xl active:scale-90 transition-transform">☰</button>
+        </header>
+
+        <main class="flex-1 flex flex-col items-center justify-center px-2 pb-10 text-center">
+            <div id="welcome-text" class="text-base text-zinc-300 mb-10 leading-relaxed max-w-md bg-zinc-900/30 p-6 rounded-2xl border border-white/5">
+                <!-- Content injected via JS -->
             </div>
 
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_contacts">📩 Контакти</h3>
-                <p class="text-zinc-500 leading-relaxed text-xs">
-                    Email: <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400">bakminsterfuler@gmail.com</a><br>
-                    Портфоліо: <a href="https://astra31415926.github.io/" target="_blank" class="text-blue-400">astra31415926.github.io</a>
-                </p>
+            <div class="w-full max-w-xs space-y-4 mt-auto">
+                <button id="btn-create-home" onclick="switchScreen('create')" class="w-full py-4 btn-primary btn-create text-white rounded-2xl text-sm uppercase"></button>
+                <button id="btn-scan-home" onclick="switchScreen('scan')" class="w-full py-4 btn-primary btn-scan-ui rounded-2xl text-sm uppercase"></button>
             </div>
-        </div>
-    </div>
-
-    <header class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-black tracking-tighter uppercase">
-            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
-        </h1>
-        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors neon-border-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-    </header>
-
-    <!-- Controls -->
-    <div class="mb-4 relative">
-        <!-- Added data-i18n-placeholder logic handled in JS, default UA text here -->
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow pr-12" placeholder="Введіть текст..."></textarea>
-        <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500 transition-colors p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
-    </div>
-
-    <!-- Display Container -->
-    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
-        <canvas id="canvas" width="1024" height="1024"></canvas>
-        <video id="video" playsinline></video>
-        <div id="scan-line" class="scan-line"></div>
-        <div id="flash-layer" class="flash-overlay"></div>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex flex-col gap-3">
-        <!-- Added data-i18n attributes for buttons -->
-        <button onclick="App.save()" data-i18n="btn_save" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Зберегти PNG</button>
+        </main>
         
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" data-i18n="btn_cam" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Сканувати камерою</button>
-            <button onclick="document.getElementById('file-input').click()" data-i18n="btn_file" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">З файлу</button>
-        </div>
-        <input type="file" id="file-input" accept="image/*" class="hidden">
+        <footer class="p-4 text-center">
+             <p class="text-xs text-zinc-700">© 2026 Mykhailo Kashkarov | Science Artist</p>
+        </footer>
     </div>
 
-    <!-- Added data-i18n for status -->
-    <p id="status" data-i18n="status_ready" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Готово</p>
+    <!-- ===================== SCREEN: CREATE ===================== -->
+    <div id="screen-create" class="screen">
+        <header class="flex items-center p-4 border-b border-white/10 relative z-20 h-16">
+            <!-- BACK ARROW: Returns to Home and Resets -->
+            <button onclick="hardReset()" class="text-2xl z-10 px-2 mr-2 text-zinc-400 hover:text-white">←</button>
+            <div class="flex-1 text-center">
+                <h1 id="t-header-create" class="text-xl font-black tracking-tighter"></h1>
+            </div>
+            <button id="menu-btn-create" class="w-10 h-10 flex items-center justify-center text-white text-xl z-10 active:scale-90 transition-transform">☰</button>
+        </header>
+
+        <div class="p-4 space-y-2 flex-shrink-0">
+            <div class="relative">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-full"></div>
+                <textarea id="b-text" class="w-full p-3 pl-4 rounded-xl outline-none h-12 text-sm font-medium"></textarea>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center p-4 relative">
+             <div id="container-create" class="relative w-full max-w-xs aspect-square bg-zinc-950 rounded-3xl p-4 border border-white/5 shadow-2xl overflow-hidden flex items-center justify-center">
+                 <!-- Canvas injected here -->
+             </div>
+        </div>
+
+        <!-- SAVE BUTTON -->
+        <div class="p-4 flex-shrink-0">
+            <button id="btn-save" onclick="saveQR()" class="w-full py-4 bg-white text-black font-bold rounded-2xl hidden active:scale-95 text-sm tracking-widest uppercase shadow-lg shadow-white/20"></button>
+        </div>
+    </div>
+
+    <!-- ===================== SCREEN: SCAN ===================== -->
+    <div id="screen-scan" class="screen">
+        <header class="flex items-center p-4 border-b border-white/10 relative z-20 h-16">
+            <!-- BACK ARROW: Returns to Home and Resets -->
+            <button onclick="hardReset()" class="text-2xl z-10 px-2 mr-2 text-zinc-400 hover:text-white">←</button>
+            <div class="flex-1 text-center">
+                <h1 id="t-header-scan" class="text-xl font-black tracking-tighter"></h1>
+            </div>
+            <div class="w-10 h-10"></div>
+        </header>
+
+        <div class="p-4 space-y-2 flex-shrink-0">
+            <div class="relative">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-full"></div>
+                <textarea id="b-text-scan" class="w-full p-3 pl-4 rounded-xl outline-none h-12 text-sm font-medium" readonly></textarea>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center p-4 relative">
+             <div id="container-scan" class="relative w-full max-w-xs aspect-square bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden flex items-center justify-center">
+                 <!-- Video/Canvas injected here -->
+             </div>
+        </div>
+
+        <div class="p-6 space-y-4 flex-shrink-0">
+            <button id="btn-cam" onclick="startCamera()" class="w-full py-4 btn-secondary text-white font-bold rounded-2xl active:scale-95 text-sm tracking-widest uppercase flex items-center justify-center gap-2"></button>
+            <button id="btn-file" onclick="document.getElementById('file-input').click()" class="w-full py-4 btn-secondary text-white font-bold rounded-2xl active:scale-95 text-sm tracking-widest uppercase flex items-center justify-center gap-2"></button>
+        </div>
+    </div>
+
+    <!-- ===================== DROPDOWN MENU ===================== -->
+    <div id="dropdown" class="dropdown-menu fixed top-4 right-4 w-72 bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl z-[100] overflow-hidden">
+        <div class="flex border-b border-white/10 p-1 bg-zinc-800/50">
+            <button onclick="setLang('ua')" class="flex-1 py-2 text-[10px] font-bold text-zinc-400 hover:text-white transition-colors border-r border-white/5">🇺🇦 UA</button>
+            <button onclick="setLang('en')" class="flex-1 py-2 text-[10px] font-bold text-zinc-400 hover:text-white transition-colors">🇬🇧 EN</button>
+        </div>
+        <div class="p-4 text-xs space-y-3">
+            <div class="text-zinc-400">
+                <h3 class="font-bold text-white mb-1">Технологія друку</h3>
+                <!-- Text Elements with correct IDs for JS injection -->
+                <p id="t-tech-text" class="leading-relaxed"></p>
+                <p id="t-tech-text-2" class="leading-relaxed mt-2"></p>
+                <a href="https://zenodo.org/records/19633526" target="_blank" class="text-blue-400 hover:underline block mt-1 text-[11px]">https://zenodo.org/records/19633526</a>
+                <p id="t-tech-contact" class="mt-2 text-zinc-500"></p>
+            </div>
+            <div class="border-t border-white/10 pt-3 space-y-2 text-zinc-400">
+                <div class="font-bold text-white">Mykhailo Kashkarov</div>
+                <div>📧 <a href="mailto:colqrnament@gmail.com" class="hover:text-white">colqrnament@gmail.com</a></div>
+                <div>📞 <a href="tel:+380635058292" class="hover:text-white">063 505 82 92</a></div>
+                <div>💻 <a href="https://github.com/Astra31415926" target="_blank" class="hover:text-white text-[11px] block truncate">github.com/Astra31415926</a></div>
+                <div>🌐 <a href="https://astra31415926.github.io/" target="_blank" class="hover:text-white text-[11px] block truncate">astra31415926.github.io</a></div>
+            </div>
+            <!-- Close Button -->
+            <button onclick="document.getElementById('dropdown').classList.remove('show')" class="w-full mt-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg text-white font-bold transition-colors">
+                Закрити
+            </button>
+        </div>
+    </div>
+
+    <!-- FLASH LAYER -->
+    <div id="flash-layer" class="fixed inset-0 bg-white opacity-0 pointer-events-none z-[200]"></div>
 
     <script>
-        // --- 1. SPRITE LIBRARY 7x7 (60 Modules) ---
+        // === 1. SPRITE LIBRARY 7x7 (60 Modules) ===
         const SPRITE_LIB_7x7 = [
             [73,42,28,127,28,42,73], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
             [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [0,62,34,42,46,32,63],
@@ -240,416 +263,584 @@
             [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
         ];
 
-        // --- 2. APP MODULE ---
-        const App = {
-            state: { lang: 'ua', frozen: false, isScanning: false },
-            els: {},
-
-            init() {
-                this.els = {
-                    canvas: document.getElementById('canvas'),
-                    video: document.getElementById('video'),
-                    input: document.getElementById('main-input'),
-                    status: document.getElementById('status'),
-                    scanLine: document.getElementById('scan-line'),
-                    flash: document.getElementById('flash-layer'),
-                    menu: document.getElementById('menu-overlay'),
-                    fileInput: document.getElementById('file-input')
-                };
-                this.els.ctx = this.els.canvas.getContext('2d');
+        // === 2. DICTIONARY (i18n) ===
+        const LANG = {
+            ua: {
+                // Welcome Screen
+                welcome_html: `<p class="font-bold text-white mb-4 text-lg">Генератор і сканер орнаментальних QR-кодів.</p>
+                <p class="mb-4">Такі коди не зчитуються стандартними сканерами, але коректно зчитуються цим сканером. Це дозволяє використовувати їх як унікальні цифрові арт об’єкти.</p>`,
                 
-                this.els.input.addEventListener('input', () => {
-                    if (this.state.frozen) this.state.frozen = false;
-                    this.generate();
-                });
-                this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
-                document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
+                // Buttons
+                btn_create_home: "[+] Створити",
+                btn_scan_home: "[🔍] Сканувати",
+                btn_save: "Зберегти PNG",
+                btn_cam: "📸 Камера",
+                btn_file: "🖼️ Галерея",
                 
-                this.clearCanvas();
-                this.setLang('ua');
+                // Headers
+                t_header_create: "Створення",
+                t_header_scan: "Сканування",
+                
+                // Menu Text (Updated as requested)
+                t_tech_text: "Звичайний CMYK-друк не підходить для відтворення таких QR-кодів, оскільки порушує цілісність каналів.",
+                t_tech_text_2: "Коректний друк можливий лише з використанням спеціальної моделі, описаної в цій технології.",
+                t_tech_contact: "З питань виготовлення та друку кодів звертайтеся до автора проєкту.",
+                
+                // Placeholders
+                ph_b_text: "Введіть текст...",
+                ph_b_scan: "Результат сканування"
             },
-
-            clearText() {
-                this.els.input.value = "";
-                this.clearCanvas();
-                this.updateStatus("Cleared"); // Using status key logic would be complex here, simple text ok
-                AudioEngine.playClick();
-            },
-
-            toggleMenu() { this.els.menu.classList.toggle('open'); },
-
-            // --- UPDATED: i18n Logic ---
-            setLang(lang) {
-                this.state.lang = lang;
+            en: {
+                // Welcome Screen
+                welcome_html: `<p class="font-bold text-white mb-4 text-lg">Ornamental QR Code Generator & Scanner.</p>
+                <p class="mb-4">These codes are not readable by standard scanners, but are correctly read by this scanner. This allows using them as unique digital art objects.</p>`,
                 
-                // Visual toggle for buttons
-                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
-                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
-                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
-                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
+                // Buttons
+                btn_create_home: "[+] Create",
+                btn_scan_home: "[🔍] Scan",
+                btn_save: "Save PNG",
+                btn_cam: "📸 Camera",
+                btn_file: "🖼️ Gallery",
                 
-                // Dictionary
-                const i18n = {
-                    // Menu Items
-                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
-                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
-                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
-                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах.", en: "Color 2D codes expand classic QR (Denso Wave, 1994) by distributing data across channels." },
-                    m_author: { ua: "🎨 Автор", en: "🎨 Author" },
-                    m_author_text: { ua: "Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).", en: "Mykhailo Kashkarov — science-art artist (optics, spectral design)." },
-                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" },
-                    m_contacts: { ua: "📩 Контакти", en: "📩 Contacts" },
-                    
-                    // UI Elements (New)
-                    main_placeholder: { ua: "Введіть текст...", en: "Type to generate..." },
-                    btn_save: { ua: "Зберегти PNG", en: "Save PNG" },
-                    btn_cam: { ua: "Сканувати камерою", en: "Cam Scan" },
-                    btn_file: { ua: "З файлу", en: "File Scan" },
-                    status_ready: { ua: "Готово", en: "Ready" }
-                };
+                // Headers
+                t_header_create: "Create",
+                t_header_scan: "Scan",
+                
+                // Menu Text
+                t_tech_text: "Standard CMYK printing is not suitable for reproducing such QR codes, as it violates channel integrity.",
+                t_tech_text_2: "Correct printing is only possible using the special SCI model described in this technology.",
+                t_tech_contact: "For code manufacturing and printing inquiries, contact the project author.",
+                
+                // Placeholders
+                ph_b_text: "Type to generate...",
+                ph_b_scan: "Scan Result"
+            }
+        };
 
-                // Apply translations to textContent
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if(i18n[key]) el.textContent = i18n[key][lang];
-                });
+        // === 3. STATE & CONFIG ===
+        const state = {
+            scanning: false,
+            locked: { b: false },
+            results: { b: null },
+            activeSearch: false,
+            standardFailCount: 0,
+            AUTO_TRIGGER_THRESHOLD: 45,
+            time: 0,
+            config: { B: { k1: 0.05, k2: 0.13 } }
+        };
 
-                // Apply specific logic for placeholder
-                if (i18n.main_placeholder) {
-                    this.els.input.placeholder = i18n.main_placeholder[lang];
+        // DOM References
+        const els = {
+            bText: document.getElementById('b-text'),
+            bTextScan: document.getElementById('b-text-scan'),
+            main: document.createElement('canvas'),
+            video: document.createElement('video'),
+            freeze: document.createElement('canvas'),
+            ctx: null,
+            fCtx: null,
+            flash: document.getElementById('flash-layer'),
+            viewfinder: document.createElement('div'),
+            dropdown: document.getElementById('dropdown'),
+            containers: {
+                create: document.getElementById('container-create'),
+                scan: document.getElementById('container-scan')
+            }
+        };
+
+        // Initialize Canvas
+        els.main.width = 512; els.main.height = 512;
+        els.freeze.width = 512; els.freeze.height = 512;
+        els.main.className = "w-full h-full transition-all duration-500 relative z-10";
+        els.video.className = "absolute inset-0 w-full h-full object-cover hidden z-10";
+        els.video.setAttribute('playsinline', '');
+        els.freeze.className = "absolute inset-0 w-full h-full object-cover hidden z-12";
+        
+        els.ctx = els.main.getContext('2d', { willReadFrequently: true });
+        els.fCtx = els.freeze.getContext('2d', { willReadFrequently: true });
+
+        els.viewfinder.className = "viewfinder-corners hidden";
+        els.viewfinder.innerHTML = `<div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>`;
+
+        // === 4. ALGORITHMS ===
+        function applyBradleyStandard(imgData, chIdx) {
+            const w = imgData.width, h = imgData.height;
+            const input = imgData.data;
+            const output = new Uint8ClampedArray(w * h * 4);
+            const intImg = new Int32Array(w * h);
+            const s = Math.floor(w / 8), t = 15;
+
+            for (let y = 0; y < h; y++) {
+                let sum = 0;
+                for (let x = 0; x < w; x++) {
+                    sum += input[(y * w + x) * 4 + chIdx];
+                    intImg[y * w + x] = (y > 0 ? intImg[(y - 1) * w + x] : 0) + sum;
                 }
-            },
+            }
 
-            generate() {
-                const text = this.els.input.value;
-                if (!text) { this.clearCanvas(); this.updateStatus("Waiting..."); return; }
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const x1 = Math.max(x - s, 0), x2 = Math.min(x + s, w - 1);
+                    const y1 = Math.max(y - s, 0), y2 = Math.min(y + s, h - 1);
+                    const count = (x2 - x1) * (y2 - y1);
+                    const sum = intImg[y2 * w + x2] - intImg[y1 * w + x2] - intImg[y2 * w + x1] + intImg[y1 * w + x1];
+                    const val = input[(y * w + x) * 4 + chIdx];
+                    const res = (val * count < sum * (100 - t) / 100) ? 0 : 255;
+                    const idx = (y * w + x) * 4;
+                    output[idx] = output[idx+1] = output[idx+2] = res; output[idx+3] = 255;
+                }
+            }
+            return new ImageData(output, w, h);
+        }
 
-                try {
-                    const utf8Text = unescape(encodeURIComponent(text));
-                    const qr = qrcode(0, 'M');
-                    qr.addData(utf8Text);
-                    qr.make();
-                    
-                    const moduleCount = qr.getModuleCount();
-                    const quietZone = 4;
-                    const totalModules = moduleCount + quietZone * 2;
-                    const modSize = 1024 / totalModules;
-                    
-                    const gridR = this.build7x7Grid(totalModules);
-                    const gridG = this.build7x7Grid(totalModules);
-                    
-                    const ctx = this.els.ctx;
-                    ctx.globalCompositeOperation = "source-over";
-                    ctx.fillStyle = "#000000";
-                    ctx.fillRect(0, 0, 1024, 1024);
+        function applySCIMath(imgData, ch, cfg) {
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                let r = d[i], g = d[i+1], b = d[i+2];
+                let target, n1, n2;
+                if (ch === 'B') { target = b; n1 = r; n2 = g; }
+                else { target = b; n1 = r; n2 = g; }
 
-                    ctx.globalCompositeOperation = "screen";
+                let res = (target - (n1 * cfg.k1 + n2 * cfg.k2)) * cfg.gain + cfg.offset;
+                res = Math.max(0, Math.min(255, res));
+                d[i] = res; d[i+1] = res; d[i+2] = res; d[i+3] = 255;
+            }
+        }
 
-                    ctx.fillStyle = "#FF0000";
-                    this.drawGrid(ctx, gridR, totalModules, modSize);
-                    
-                    ctx.fillStyle = "#00FF00";
-                    this.drawGrid(ctx, gridG, totalModules, modSize);
+        function getOscParam(t, period, min, max) {
+            const cycle = t % period;
+            const half = period / 2;
+            const pos = (cycle < half) ? cycle / half : (period - cycle) / half;
+            return min + pos * (max - min);
+        }
 
-                    ctx.fillStyle = "#0000FF";
-                    for (let r = 0; r < moduleCount; r++) {
-                        for (let c = 0; c < moduleCount; c++) {
-                            if (qr.isDark(r, c)) {
-                                ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
-                            }
+        // === 5. LOCALIZATION LOGIC ===
+        function setLang(lang) {
+            const dict = LANG[lang];
+            if (!dict) return;
+
+            // 1. Inject Welcome HTML
+            const welcomeEl = document.getElementById('welcome-text');
+            if (welcomeEl) welcomeEl.innerHTML = dict.welcome_html;
+
+            // 2. Inject Text Content using Key -> ID mapping
+            // Keys: t_header_create, t_tech_text -> IDs: t-header-create, t-tech-text
+            const textKeys = [
+                't_header_create', 't_header_scan', 
+                't_tech_text', 't_tech_text_2', 't_tech_contact'
+            ];
+            
+            textKeys.forEach(key => {
+                const elementId = key.replace(/_/g, '-'); // Convert snake_case to kebab-case
+                const el = document.getElementById(elementId);
+                if (el) {
+                    el.textContent = dict[key];
+                } else {
+                    console.warn(`Element with ID "${elementId}" not found for key "${key}"`);
+                }
+            });
+
+            // 3. Inject Buttons
+            document.getElementById('btn-create-home').textContent = dict.btn_create_home;
+            document.getElementById('btn-scan-home').textContent = dict.btn_scan_home;
+            document.getElementById('btn-save').textContent = dict.btn_save;
+            document.getElementById('btn-cam').innerHTML = `<span>${dict.btn_cam}</span>`;
+            document.getElementById('btn-file').innerHTML = `<span>${dict.btn_file}</span>`;
+
+            // 4. Inject Placeholders
+            els.bText.placeholder = dict.ph_b_text;
+            els.bTextScan.placeholder = dict.ph_b_scan;
+        }
+
+        // === 6. MAIN HYBRID LOOP ===
+        function processLoop() {
+            if (!state.scanning) return;
+
+            let sourceCopy = null;
+            
+            if (els.video.classList.contains('hidden') === false && els.video.readyState === els.video.HAVE_ENOUGH_DATA) {
+                els.ctx.drawImage(els.video, 0, 0, 512, 512);
+                sourceCopy = els.ctx.getImageData(0, 0, 512, 512);
+            } else if (els.freeze.classList.contains('hidden') === false) {
+                sourceCopy = els.fCtx.getImageData(0, 0, 512, 512);
+            }
+
+            if (sourceCopy) {
+                if (state.standardFailCount > state.AUTO_TRIGGER_THRESHOLD && !state.activeSearch) {
+                    state.activeSearch = true;
+                }
+
+                if (!state.locked.b) {
+                    const ch = 'B';
+                    const idx = 2; 
+                    const baseCfg = state.config[ch];
+                    let foundInFrame = false;
+
+                    if (state.activeSearch) {
+                        state.time++; 
+                        const gain = getOscParam(state.time, 100, 0.5, 3.5);
+                        const offset = getOscParam(state.time, 250, -80, 0);
+                        const cfg = { ...baseCfg, gain, offset };
+
+                        let workData = new ImageData(new Uint8ClampedArray(sourceCopy.data), 512, 512);
+                        applySCIMath(workData, ch, cfg);
+                        let mono = applyBradleyStandard(workData, 0);
+                        
+                        const code = jsQR(mono.data, 512, 512, { inversionAttempts: "attemptBoth" });
+                        
+                        if (code) {
+                            lockChannel(ch, code.data);
+                            foundInFrame = true;
                         }
+                        
+                        if (!foundInFrame) els.ctx.putImageData(workData, 0, 0);
+
+                    } else {
+                        state.standardFailCount++;
+                        let mono = applyBradleyStandard(sourceCopy, idx);
+                        const code = jsQR(mono.data, 512, 512, { inversionAttempts: "attemptBoth" });
+                        
+                        if (code) {
+                            lockChannel(ch, code.data);
+                            foundInFrame = true;
+                            state.standardFailCount = 0; 
+                        }
+                        
+                        if (!foundInFrame) els.ctx.putImageData(sourceCopy, 0, 0);
                     }
-
-                    ctx.globalCompositeOperation = "source-over";
-                    this.updateStatus("Mandala Generated");
-                } catch (e) {
-                    console.error(e);
-                    this.updateStatus("Error");
                 }
-            },
+            }
+            requestAnimationFrame(processLoop);
+        }
 
-            build7x7Grid(size) {
-                const grid = Array(size).fill(0).map(() => Array(size).fill(0));
-                const center = Math.floor(size / 2);
-                const octantMap = new Map(); 
-                const maxBlocks = Math.ceil((size / 2 + 7) / 7); 
+        // === 7. UI & ACTIONS ===
+        function lockChannel(ch, data) {
+            const key = ch.toLowerCase();
+            if (state.locked[key]) return;
+            
+            state.locked[key] = true;
+            state.results[key] = data;
+            
+            playBeep();
+            flashScreen();
+            
+            els.viewfinder.classList.add('viewfinder-hunting');
+            setTimeout(() => els.viewfinder.classList.remove('viewfinder-hunting'), 300);
 
-                for (let by = 0; by < maxBlocks; by++) {
-                    for (let bx = by; bx < maxBlocks; bx++) {
-                        const patternIdx = Math.floor(Math.random() * SPRITE_LIB_7x7.length);
-                        const pattern = SPRITE_LIB_7x7[patternIdx];
-                        const flipX = Math.random() > 0.5;
-                        const flipY = Math.random() > 0.5;
+            els.bTextScan.value = data;
+            els.bTextScan.classList.add('locked', 'locked-b');
+            
+            els.bText.value = data;
+            els.bText.classList.add('locked', 'locked-b');
 
-                        for (let py = 0; py < 7; py++) {
-                            for (let px = 0; px < 7; px++) {
-                                let sX = flipX ? (6 - px) : px;
-                                let sY = flipY ? (6 - py) : py;
-                                
-                                if ((pattern[sY] >> (6 - sX)) & 1) {
-                                    let xRel = (bx * 7) + px - 3;
-                                    let yRel = (by * 7) + py - 3;
+            if (state.locked.b) {
+                stopScanning();
+                switchScreen('create');
+                generateMandala();
+            }
+        }
 
-                                    if (xRel >= yRel && yRel >= 0) {
-                                        octantMap.set(`${xRel},${yRel}`, true);
-                                    }
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.frequency.value = 880; o.type = "sine";
+                g.gain.setValueAtTime(0.1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+                o.start(); o.stop(ctx.currentTime + 0.15);
+            } catch(e){}
+        }
+
+        function flashScreen() {
+            els.flash.classList.add('flash-anim');
+            setTimeout(() => els.flash.classList.remove('flash-anim'), 400);
+        }
+
+        function switchScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + screenName).classList.add('active');
+            
+            const container = els.containers[screenName];
+            if (container) {
+                if (screenName === 'create') {
+                    container.appendChild(els.main);
+                    els.main.classList.remove('hidden');
+                    els.main.style.opacity = '1';
+                } else if (screenName === 'scan') {
+                    container.appendChild(els.video);
+                    container.appendChild(els.freeze);
+                    container.appendChild(els.main);
+                    container.appendChild(els.viewfinder);
+                }
+            }
+        }
+
+        async function startCamera() {
+            state.locked = {b:false};
+            state.results = {b:null};
+            state.activeSearch = false;
+            state.standardFailCount = 0;
+            
+            els.bTextScan.value = "";
+            els.bTextScan.classList.remove('locked', 'locked-b');
+            els.bText.value = "";
+            els.bText.classList.remove('locked', 'locked-b');
+
+            els.viewfinder.classList.remove('hidden');
+            els.video.classList.remove('hidden');
+            els.freeze.classList.add('hidden');
+            els.main.classList.add('hidden');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: {ideal: 1280} } });
+                els.video.srcObject = stream; 
+                els.video.play();
+                state.scanning = true;
+                requestAnimationFrame(processLoop);
+            } catch(e) { alert("Camera Error: " + e); }
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0]; 
+            if (!file) return;
+            
+            state.locked = {b:false};
+            state.results = {b:null};
+            state.activeSearch = false;
+            state.standardFailCount = 0;
+
+            els.bTextScan.value = "";
+            els.bTextScan.classList.remove('locked', 'locked-b');
+            els.bText.value = "";
+            els.bText.classList.remove('locked', 'locked-b');
+            
+            els.viewfinder.classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const s = 512;
+                    els.freeze.width = s; els.freeze.height = s;
+                    const ctx = els.fCtx;
+                    const min = Math.min(img.width, img.height);
+                    ctx.drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, s, s);
+                    
+                    els.freeze.classList.remove('hidden');
+                    els.video.classList.add('hidden');
+                    els.main.classList.add('hidden');
+
+                    state.scanning = true;
+                    state.activeSearch = true;
+                    state.standardFailCount = 100; 
+                    requestAnimationFrame(processLoop);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function stopScanning() {
+            state.scanning = false;
+            if (els.video.srcObject) els.video.srcObject.getTracks().forEach(t => t.stop());
+            els.viewfinder.classList.add('hidden');
+            els.video.classList.add('hidden');
+        }
+
+        function hardReset() {
+            stopScanning();
+            
+            // Full Reset
+            state.locked = {b:false};
+            state.results = {b:null};
+            state.activeSearch = false;
+            state.standardFailCount = 0;
+            state.time = 0;
+
+            els.bText.value = ""; 
+            els.bText.classList.remove('locked', 'locked-b');
+            els.bTextScan.value = ""; 
+            els.bTextScan.classList.remove('locked', 'locked-b');
+            
+            els.freeze.classList.add('hidden');
+            els.video.classList.add('hidden');
+            
+            els.ctx.fillStyle = "#000";
+            els.ctx.fillRect(0,0,512,512);
+            
+            document.getElementById('btn-save').classList.add('hidden');
+            
+            switchScreen('home');
+        }
+
+        // === 8. MANDALA GENERATION ===
+        function generateMandala() {
+            const text = els.bText.value;
+            
+            els.ctx.fillStyle = "#000000"; 
+            els.ctx.fillRect(0,0,512,512);
+
+            if (!text.trim()) {
+                els.main.style.opacity = 0.1;
+                document.getElementById('btn-save').classList.add('hidden');
+                return;
+            }
+            els.main.style.opacity = 1;
+            els.main.classList.remove('hidden');
+
+            try {
+                const utf8Text = unescape(encodeURIComponent(text));
+                const qr = qrcode(0, 'M');
+                qr.addData(utf8Text);
+                qr.make();
+                
+                const moduleCount = qr.getModuleCount();
+                
+                const frameOuter = 2; 
+                const frameInner = 1; 
+                const quietZone = 2; 
+                
+                const totalModules = moduleCount + (quietZone * 2) + (frameInner * 2) + (frameOuter * 2);
+                const modSize = 512 / totalModules;
+
+                const colOuter = "rgb(200, 200, 200)";
+                const colInner = "rgb(50, 50, 50)";
+
+                els.ctx.fillStyle = colOuter;
+                els.ctx.fillRect(0, 0, 512, 512);
+
+                const innerFrameOffset = frameOuter * modSize;
+                const innerFrameSize = 512 - (innerFrameOffset * 2);
+                els.ctx.fillStyle = colInner;
+                els.ctx.fillRect(innerFrameOffset, innerFrameOffset, innerFrameSize, innerFrameSize);
+                
+                const ornamentSize = moduleCount + (quietZone * 2);
+                const gridR = build7x7Grid(ornamentSize);
+                const gridG = build7x7Grid(ornamentSize);
+
+                const coreStart = frameOuter + frameInner + quietZone;
+                
+                for (let r = 0; r < totalModules; r++) {
+                    for (let c = 0; c < totalModules; c++) {
+                        const x = c * modSize;
+                        const y = r * modSize;
+
+                        const isOuterFrame = (r < frameOuter || r >= totalModules - frameOuter || c < frameOuter || c >= totalModules - frameOuter);
+                        const isInnerFrame = !isOuterFrame && (r < frameOuter + frameInner || r >= totalModules - (frameOuter + frameInner) || c < frameOuter + frameInner || c >= totalModules - (frameOuter + frameInner));
+                        
+                        if (isOuterFrame) continue; 
+                        if (isInnerFrame) continue; 
+                        
+                        const oR = r - (frameOuter + frameInner);
+                        const oC = c - (frameOuter + frameInner);
+
+                        const qrR = r - coreStart;
+                        const qrC = c - coreStart;
+                        
+                        const isDataCore = (qrR >= 0 && qrR < moduleCount && qrC >= 0 && qrC < moduleCount);
+
+                        // R & G Channels
+                        let valR = gridR[oR][oC] ? 200 : 50;
+                        let valG = gridG[oR][oC] ? 200 : 50;
+
+                        // B Channel (Inverted Logic)
+                        let valB = 100; 
+
+                        if (isDataCore) {
+                            // Inversion: If QR is Dark (Data), make Blue Light (150)
+                            valB = qr.isDark(qrR, qrC) ? 150 : 100;
+                        }
+                        
+                        els.ctx.fillStyle = `rgb(${valR}, ${valG}, ${valB})`;
+                        els.ctx.fillRect(x, y, modSize + 0.5, modSize + 0.5);
+                    }
+                }
+
+                // Show Save Button after generation
+                document.getElementById('btn-save').classList.remove('hidden');
+                
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function build7x7Grid(size) {
+            const grid = Array(size).fill(0).map(() => Array(size).fill(0));
+            const center = Math.floor(size / 2);
+            const octantMap = new Map(); 
+            const maxBlocks = Math.ceil((size / 2 + 7) / 7); 
+
+            for (let by = 0; by < maxBlocks; by++) {
+                for (let bx = by; bx < maxBlocks; bx++) {
+                    const patternIdx = Math.floor(Math.random() * SPRITE_LIB_7x7.length);
+                    const pattern = SPRITE_LIB_7x7[patternIdx];
+                    const flipX = Math.random() > 0.5;
+                    const flipY = Math.random() > 0.5;
+
+                    for (let py = 0; py < 7; py++) {
+                        for (let px = 0; px < 7; px++) {
+                            let sX = flipX ? (6 - px) : px;
+                            let sY = flipY ? (6 - py) : py;
+                            
+                            if ((pattern[sY] >> (6 - sX)) & 1) {
+                                let xRel = (bx * 7) + px - 3;
+                                let yRel = (by * 7) + py - 3;
+                                if (xRel >= yRel && yRel >= 0) {
+                                    octantMap.set(`${xRel},${yRel}`, true);
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                octantMap.forEach((val, key) => {
-                    const [xStr, yStr] = key.split(',');
-                    const x = parseInt(xStr);
-                    const y = parseInt(yStr);
-                    
-                    const points = [
-                        [ x,  y], [ y,  x], [-x,  y], [-y,  x],
-                        [ x, -y], [ y, -x], [-x, -y], [-y, -x]
-                    ];
-
-                    points.forEach(([px, py]) => {
-                        const absX = center + px;
-                        const absY = center + py;
-                        
-                        if (absX >= 0 && absX < size && absY >= 0 && absY < size) {
-                            grid[absY][absX] = 1;
-                        }
-                    });
-                });
-
-                return grid;
-            },
-
-            drawGrid(ctx, grid, size, cellSize) {
-                for(let r=0; r<size; r++) {
-                    for(let c=0; c<size; c++) {
-                        if(grid[r][c]) {
-                            ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
-                        }
-                    }
-                }
-            },
-
-            // --- SCANNER & RITUAL LOGIC ---
-
-            startCamera() {
-                if(this.state.isScanning) return;
-                this.state.isScanning = true;
-                this.updateStatus("Accessing Camera...");
-
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(stream => {
-                        this.els.video.srcObject = stream;
-                        this.els.video.style.display = 'block';
-                        this.els.video.play();
-                        this.updateStatus("Scanning...");
-                        AudioEngine.startScanAtmosphere();
-                        this.scanLoop();
-                    })
-                    .catch(err => { alert("Camera Error: " + err.message); this.stopCamera(); });
-            },
-
-            stopCamera() {
-                this.state.isScanning = false;
-                AudioEngine.stopAll();
-                if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
-                this.els.video.style.display = 'none';
-                this.els.scanLine.style.display = 'none';
-            },
-
-            scanLoop() {
-                if (!this.state.isScanning) return;
-                const video = this.els.video;
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    const result = this.processFrame(video, video.videoWidth, video.videoHeight);
-                    if (result) {
-                        this.captureFrame(video, video.videoWidth, video.videoHeight);
-                        this.stopCamera();
-                        this.performRitual(result);
-                        return;
-                    }
-                }
-                requestAnimationFrame(() => this.scanLoop());
-            },
-
-            processFrame(source, w, h) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 1024; canvas.height = 1024;
-                const ctx = canvas.getContext('2d');
-                const aspect = w / h;
-                let sx = 0, sy = 0, sw = w, sh = h;
-                if (aspect > 1) { sw = h; sx = (w - sw) / 2; }
-                else { sh = w; sy = (h - sh) / 2; }
-                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
-                const imageData = ctx.getImageData(0, 0, 1024, 1024);
-                const data = imageData.data;
-                for (let i = 0; i < data.length; i += 4) {
-                    const b = data[i+2];
-                    data[i] = b; data[i+1] = b; data[i+2] = b;
-                }
-                return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
-            },
-
-            captureFrame(source, w, h) {
-                const ctx = this.els.ctx;
-                const aspect = w / h;
-                let sx = 0, sy = 0, sw = w, sh = h;
-                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
-                else { sh = w; sy = (h - sh) / 2; }
-                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
-            },
-
-            performRitual(code) {
-                this.state.isScanning = true;
-                AudioEngine.playScan();
+            octantMap.forEach((val, key) => {
+                const [xStr, yStr] = key.split(',');
+                const x = parseInt(xStr);
+                const y = parseInt(yStr);
                 
-                const line = this.els.scanLine;
-                line.style.display = 'block';
-                line.style.animation = 'pulse 1.5s infinite';
-                line.style.top = '0%';
-                line.style.transition = 'none';
-                void line.offsetHeight;
-                line.style.transition = 'top 2.5s linear';
-                line.style.top = '100%';
-                this.updateStatus("Analyzing...");
+                const points = [
+                    [ x,  y], [ y,  x], [-x,  y], [-y,  x],
+                    [ x, -y], [ y, -x], [-x, -y], [-y, -x]
+                ];
 
-                setTimeout(() => {
-                    this.els.flash.style.opacity = '1';
-                    AudioEngine.playResult(!!code);
-                    setTimeout(() => {
-                        this.els.flash.style.opacity = '0';
-                        line.style.animation = 'none';
-                        if (code) {
-                            try { this.els.input.value = decodeURIComponent(escape(code.data)); } catch(e) { this.els.input.value = code.data; }
-                            this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
-                            this.els.ctx.fillRect(0, 0, 1024, 1024);
-                            this.updateStatus("Decoded!");
-                            this.state.frozen = true;
-                        } else {
-                            this.updateStatus("No Data Found");
-                            this.clearCanvas();
-                        }
-                        this.state.isScanning = false;
-                        line.style.display = 'none';
-                    }, 150);
-                }, 2500);
-            },
+                points.forEach(([px, py]) => {
+                    const absX = center + px;
+                    const absY = center + py;
+                    if (absX >= 0 && absX < size && absY >= 0 && absY < size) {
+                        grid[absY][absX] = 1;
+                    }
+                });
+            });
+            return grid;
+        }
 
-            handleFile(e) {
-                const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        this.captureFrame(img, img.width, img.height);
-                        const result = this.processFrame(img, img.width, img.height);
-                        this.state.isScanning = true;
-                        AudioEngine.playScan();
-                        this.performRitual(result);
-                    };
-                    img.src = evt.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            },
+        function saveQR() { 
+            const a = document.createElement('a'); 
+            a.download = 'qrnament-mandala.png'; 
+            a.href = els.main.toDataURL(); 
+            a.click(); 
+        }
 
-            // --- UTILS ---
-            clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
-            updateStatus(msg) { this.els.status.innerText = msg; },
-            
-            save() {
-                const link = document.createElement('a');
-                link.download = 'qrnament-mandala.png';
-                link.href = this.els.canvas.toDataURL();
-                link.click();
-            }
+        // === EVENT LISTENERS ===
+        document.getElementById('file-input').addEventListener('change', handleFile);
+        els.bText.addEventListener('input', generateMandala);
+        
+        // Menu Logic
+        const menuBtns = [document.getElementById('menu-btn-home'), document.getElementById('menu-btn-create')];
+        menuBtns.forEach(btn => {
+            if(btn) btn.onclick = (e) => { e.stopPropagation(); els.dropdown.classList.toggle('show'); };
+        });
+        
+        document.onclick = (e) => {
+            if(!e.target.closest('#dropdown')) els.dropdown.classList.remove('show');
         };
+        
+        // === INITIALIZATION ===
+        setLang('ua');
+        switchScreen('home');
 
-        // --- AUDIO ENGINE v4.5 (Fixed) ---
-        const AudioEngine = {
-            ctx: null, scanNodes: [], initialized: false,
-            init() {
-                if(this.initialized) return;
-                try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.initialized = true; } catch(e) {}
-            },
-            playClick() {
-                this.init(); if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                osc.type = 'sine'; osc.frequency.value = 1200;
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 0.05);
-            },
-            playScan() {
-                if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(1000, now + 2.5);
-
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.05, now + 0.2);
-                gain.gain.setValueAtTime(0.05, now + 2.0);
-                gain.gain.linearRampToValueAtTime(0, now + 2.5);
-
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 2.6);
-            },
-            startScanAtmosphere() {
-                this.init(); this.stopAll();
-                const drone = this.ctx.createOscillator();
-                drone.type = 'sine'; drone.frequency.value = 40;
-                const droneGain = this.ctx.createGain(); droneGain.gain.value = 0.10;
-                drone.connect(droneGain); droneGain.connect(this.ctx.destination); drone.start();
-                this.scanNodes.push(drone);
-
-                const beep = this.ctx.createOscillator();
-                beep.type = 'sine'; beep.frequency.value = 880;
-                const beepGain = this.ctx.createGain(); beepGain.gain.value = 0.02;
-                beep.connect(beepGain); beepGain.connect(this.ctx.destination); beep.start();
-                this.scanNodes.push(beep);
-
-                const toggle = () => {
-                    if(!this.scanNodes.includes(beep)) return;
-                    const now = this.ctx.currentTime;
-                    beepGain.gain.setValueAtTime(beepGain.gain.value, now);
-                    beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.01 ? 0.001 : 0.02, now + 0.2);
-                };
-                this.beepInterval = setInterval(toggle, 400);
-            },
-            stopAll() { if(this.beepInterval) clearInterval(this.beepInterval); this.scanNodes.forEach(n => { try { n.stop(); } catch(e) {} }); this.scanNodes = []; },
-            playResult(success) {
-                if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.1, now);
-                if(success) {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(2500, now);
-                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.3);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
-                } else {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.5);
-                }
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 0.6);
-            }
-        };
-
-        // Initialize App
-        document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
 </html>
